@@ -80,14 +80,14 @@ def my_generate_moveit_rviz_launch(ld, moveit_config):
     )
 
     # --- Add a static TF publisher: world -> base_link ---
-    static_tf_world_to_base = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="world_to_base_static_tf",
-        arguments=["0", "0", "0", "0", "0", "0", "world", "base_link"],
-        output="screen",
-    )
-    ld.add_action(static_tf_world_to_base)
+    # static_tf_world_to_base = Node(
+    #     package="tf2_ros",
+    #     executable="static_transform_publisher",
+    #     name="world_to_base_static_tf",
+    #     arguments=["0", "0", "0", "0", "0", "0", "world", "base_link"],
+    #     output="screen",
+    # )
+    # ld.add_action(static_tf_world_to_base)
     # ----------------------------------------------------
 
     rviz_parameters = [
