@@ -21,7 +21,7 @@ def generate_launch_description():
         "world",
         default_value=PathJoinSubstitution([
             get_package_share_directory("alphabot_gazebo"),
-            "worlds", "empty.world"
+            "worlds", "elevator_classic.world"
         ]),
         description="SDF world file"
     )

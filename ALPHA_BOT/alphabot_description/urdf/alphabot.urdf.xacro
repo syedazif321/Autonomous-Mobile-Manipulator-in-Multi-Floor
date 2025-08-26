@@ -202,18 +202,18 @@
   <!-- Camera body (mesh orientation baked in visuals; TF comes from joints) -->
   <link name="realsense_link">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 1.57"/>
       <mass value="0.0615752"/>
       <inertia ixx="9.108e-05" ixy="0" ixz="0" iyy="2.51e-06" iyz="0" izz="8.931e-05"/>
     </inertial>
     <visual name="visual">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 1.57"/>
       <geometry>
         <mesh filename="package://alphabot_description/meshes/RealSense_D435/meshes/realsense.dae"/>
       </geometry>
     </visual>
     <collision name="collision">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+     <origin xyz="0 0 0" rpy="0 0 1.57"/>
       <geometry>
         <mesh filename="package://alphabot_description/meshes/RealSense_D435/meshes/realsense.dae"/>
       </geometry>
