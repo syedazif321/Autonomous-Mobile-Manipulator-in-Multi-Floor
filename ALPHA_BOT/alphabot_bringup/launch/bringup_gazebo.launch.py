@@ -100,10 +100,13 @@ def generate_launch_description():
         namespace=ns,
         parameters=[{
             "robot_description": robot_description,
-            "use_sim_time": use_sim_time
+            "use_sim_time": use_sim_time,
         }],
+        # Subscribe to the global /joint_states even though we're namespaced
+        remappings=[("joint_states", "/joint_states")],
         output="screen",
     )
+
 
     # ---------------- Spawn entity in Gazebo ----------------
     spawner = Node(
