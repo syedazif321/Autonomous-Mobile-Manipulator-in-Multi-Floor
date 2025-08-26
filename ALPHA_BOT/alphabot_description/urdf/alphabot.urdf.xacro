@@ -1,37 +1,34 @@
 <?xml version="1.0"?>
 <robot name="alphabot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-
+  <!-- Args / properties -->
   <xacro:property name="use_gazebo_camera" value="true"/>
   <xacro:property name="cmd_vel_topic"     value="/amazon_robot/cmd_vel"/>
   <xacro:property name="odom_topic"        value="/amazon_robot/odom"/>
   <xacro:property name="scan_topic"        value="/scan"/>
 
-
+  <!-- ================== Base frames ================== -->
   <link name="base_footprint"/>
   <link name="base_link"/>
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child  link="base_link"/>
-
     <origin xyz="0 0 0.072" rpy="0 0 0"/>
   </joint>
 
+  <!-- ================== Chassis ================== -->
   <link name="chassis_link">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="1580"/>
-
       <inertia ixx="1997.86" ixy="0" ixz="0" iyy="442.769" iyz="62.5206" izz="2238.05"/>
     </inertial>
-
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
         <mesh filename="package://alphabot_description/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
-
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -47,8 +44,7 @@
   </joint>
 
   <!-- ================== Wheels ================== -->
-  <!-- Shared wheel params: radius=0.072, width=0.06; we orient cyl axis along X (rpy 0 1.5708 0) -->
-  <!-- Rear LEFT (drive) -->
+  <!-- Rear LEFT -->
   <link name="bl_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -70,11 +66,11 @@
     <origin xyz="-0.18 -0.244 0" rpy="0 0 0"/>
     <parent link="chassis_link"/>
     <child  link="bl_1"/>
-
     <axis xyz="1 0 0"/>
     <dynamics friction="12.0316061502"/>
   </joint>
 
+  <!-- Rear RIGHT -->
   <link name="br_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -100,7 +96,6 @@
     <dynamics friction="12.0316061502"/>
   </joint>
 
-
   <link name="l_steer_1">
     <inertial><origin xyz="0 0 0"/><mass value="1"/><inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
   </link>
@@ -123,6 +118,7 @@
     <limit lower="0.0" upper="0.0" effort="1e9" velocity="0.0"/>
   </joint>
 
+  <!-- Front wheels -->
   <link name="fl_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -171,6 +167,7 @@
     <axis xyz="1 0 0"/>
   </joint>
 
+  <!-- ================== LiDAR & Lift ================== -->
   <link name="lidar_link">
     <inertial><origin xyz="0 0 0"/><mass value="0.5"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
     <visual><origin xyz="0 0 0"/><geometry><cylinder radius="0.04" length="0.05"/></geometry></visual>
@@ -201,29 +198,90 @@
     <child  link="lift_link"/>
   </joint>
 
-  <link name="camera_mount_link">
-    <inertial><origin xyz="0 0 0"/><mass value="0.1"/><inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/></inertial>
+  <!-- ================== RealSense D435 ================== -->
+  <link name="realsense_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <mass value="0.0615752"/>
+      <inertia ixx="9.108e-05" ixy="0" ixz="0" iyy="2.51e-06" iyz="0" izz="8.931e-05"/>
+    </inertial>
+
+    <visual name="visual">
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <geometry>
+        <mesh filename="package://alphabot_description/meshes/RealSense_D435/realsense.dae"/>
+      </geometry>
+      <material>
+        <script>
+          <uri>package://alphabot_description/RealSense_D435/materials/scripts/</uri>
+          <uri>package://alphabot_description/RealSense_D435/materials/textures/</uri>
+          <name>UrbanTile/RealSense_Diffuse</name>
+        </script>
+      </material>
+    </visual>
+
+    <collision name="collision">
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <geometry>
+        <mesh filename="package://alphabot_description/meshes/RealSense_D435/realsense.dae"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="camera_mount_joint" type="fixed">
-    <origin xyz="0 0.45 0.09" rpy="0 0 0"/>
+
+  <!-- Mount pose -->
+  <joint name="realsense_joint" type="fixed">
+    <origin xyz="0.071927 -1.097241 1.312280" rpy="1.799222 0 1.57"/>
     <parent link="base_link"/>
-    <child  link="camera_mount_link"/>
+    <child  link="realsense_link"/>
   </joint>
 
-  <link name="camera_link"/>
-  <joint name="camera_joint" type="fixed">
-    <parent link="camera_mount_link"/>
-    <child  link="camera_link"/>
+  <!-- Depth frames only (REP 105) -->
+  <link name="realsense_depth_frame"/>
+  <joint name="realsense_depth_frame_joint" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="realsense_link"/><child link="realsense_depth_frame"/>
   </joint>
 
-  <link name="camera_optical_frame"/>
-  <joint name="camera_optical_joint" type="fixed">
+  <link name="realsense_depth_optical_frame"/>
+  <joint name="realsense_depth_optical_joint" type="fixed">
     <origin xyz="0 0 0" rpy="0 -1.57079632679 3.14159265359"/>
-    <parent link="camera_link"/>
-    <child  link="camera_optical_frame"/>
+    <parent link="realsense_depth_frame"/><child link="realsense_depth_optical_frame"/>
   </joint>
 
+  <!-- ================== Gazebo sensor: SINGLE depth camera with image+info+pointcloud ================== -->
+  <gazebo reference="realsense_link">
+    <sensor name="realsense_depth_camera" type="depth">
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <visualize>0</visualize>
+      <pose>0 0 0 0 0 -1.5708</pose>
+      <camera name="depth_camera">
+        <horizontal_fov>1.0472</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>B8G8R8</format>
+        </image>
+        <clip><near>0.01</near><far>10</far></clip>
+      </camera>
+
+
+      <plugin name="realsense_depth_plugin" filename="libgazebo_ros_camera.so">
+        <ros>
+
+          <remapping>image_raw:=/realsense_depth_camera/depth/image_raw</remapping>
+          <remapping>camera_info:=/realsense_depth_camera/depth/camera_info</remapping>
+          <remapping>points:=/realsense_depth_camera/points</remapping>
+        </ros>
+        <frame_name>realsense_depth_optical_frame</frame_name>
+        <output_pointcloud>true</output_pointcloud>
+        <pointCloudCutoff>0.01</pointCloudCutoff>
+        <pointCloudCutoffMax>10.0</pointCloudCutoffMax>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <!-- ================== Gazebo materials/contacts ================== -->
   <gazebo reference="chassis_link"><selfCollide>true</selfCollide><mu1>0.2</mu1><mu2>0.2</mu2></gazebo>
   <gazebo reference="bl_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
   <gazebo reference="br_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
@@ -231,6 +289,7 @@
   <gazebo reference="fr_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
   <gazebo reference="lift_link"><mu1>1e6</mu1><mu2>1e5</mu2><kp>1e5</kp><kd>1</kd><maxVel>0.01</maxVel><minDepth>0.001</minDepth></gazebo>
 
+  <!-- ================== LIDAR (unchanged) ================== -->
   <gazebo reference="lidar_link">
     <sensor name="lidar" type="ray">
       <always_on>true</always_on>
@@ -245,56 +304,21 @@
             <max_angle>3.14159265</max_angle>
           </horizontal>
         </scan>
-        <range>
-          <min>0.12</min>
-          <max>30.0</max>
-          <resolution>0.01</resolution>
-        </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.01</stddev>
-        </noise>
+        <range><min>0.12</min><max>20.0</max><resolution>0.01</resolution></range>
+        <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
       </ray>
       <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
-        <ros>
-          <remapping>~/out:=$(arg scan_topic)</remapping>
-        </ros>
+        <ros><remapping>~/out:=$(arg scan_topic)</remapping></ros>
         <output_type>sensor_msgs/LaserScan</output_type>
         <frame_name>lidar_link</frame_name>
       </plugin>
     </sensor>
   </gazebo>
 
-  <!-- ================== Gazebo: camera (optional) ================== -->
-  <xacro:if value="$(arg use_gazebo_camera)">
-    <gazebo reference="camera_link">
-      <sensor name="sim_camera" type="camera">
-        <update_rate>30</update_rate>
-        <camera>
-          <horizontal_fov>1.39626</horizontal_fov>
-          <image>
-            <width>640</width>
-            <height>480</height>
-            <format>R8G8B8</format>
-          </image>
-          <clip><near>0.02</near><far>50.0</far></clip>
-        </camera>
-        <plugin name="gazebo_ros_camera" filename="libgazebo_ros_camera.so">
-          <ros>
-            <remapping>image_raw:=/camera/image_raw</remapping>
-            <remapping>camera_info:=/camera/camera_info</remapping>
-            <frame_name>camera_optical_frame</frame_name>
-          </ros>
-        </plugin>
-      </sensor>
-    </gazebo>
-  </xacro:if>
-
-  <!-- ================== Gazebo: joint state publisher ================== -->
+  <!-- ================== Gazebo: joint states + diff drive ================== -->
   <gazebo>
     <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
-      <update_rate>50</update_rate>
+      <update_rate>100</update_rate>
       <joint_name>bl_axle</joint_name>
       <joint_name>br_axle</joint_name>
       <joint_name>fl_axle</joint_name>
@@ -304,7 +328,6 @@
     </plugin>
   </gazebo>
 
-  <!-- ================== Gazebo: differential drive ================== -->
   <gazebo>
     <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
       <ros>
@@ -312,10 +335,8 @@
         <remapping>odom:=$(arg odom_topic)</remapping>
       </ros>
       <update_rate>100</update_rate>
-
       <left_joint>bl_axle</left_joint>
       <right_joint>br_axle</right_joint>
-
       <wheel_diameter>0.144</wheel_diameter>
       <wheel_separation>0.488</wheel_separation>
 
@@ -325,10 +346,8 @@
       <publish_odom>true</publish_odom>
       <publish_odom_tf>true</publish_odom_tf>
       <publish_wheel_tf>true</publish_wheel_tf>
-
       <odometry_frame>odom</odometry_frame>
       <robot_base_frame>base_footprint</robot_base_frame>
-      <!-- 0 = ENCODER, 1 = WORLD -->
       <odometry_source>0</odometry_source>
     </plugin>
   </gazebo>
