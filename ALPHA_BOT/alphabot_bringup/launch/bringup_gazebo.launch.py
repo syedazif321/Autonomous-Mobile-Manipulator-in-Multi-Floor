@@ -45,7 +45,7 @@ def generate_launch_description():
         "rviz_config",
         default_value=PathJoinSubstitution([
             get_package_share_directory("alphabot_bringup"),
-            "rviz", "alphabot.rviz"
+            "config", "alphabot.rviz"
         ]),
         description="RViz config (ignored if missing)"
     )

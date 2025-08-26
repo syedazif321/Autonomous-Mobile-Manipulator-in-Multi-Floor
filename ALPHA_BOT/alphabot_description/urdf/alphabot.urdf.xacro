@@ -1,43 +1,41 @@
 <?xml version="1.0"?>
 <robot name="alphabot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Resolve the package share to an ABSOLUTE path -->
-  <xacro:property name="pkg_share" value="$(find alphabot_description)"/>
+
   <xacro:property name="use_gazebo_camera" value="true"/>
   <xacro:property name="cmd_vel_topic"     value="/amazon_robot/cmd_vel"/>
   <xacro:property name="odom_topic"        value="/amazon_robot/odom"/>
   <xacro:property name="scan_topic"        value="/scan"/>
 
-  <!-- ================== Frames (TF root) ================== -->
+
   <link name="base_footprint"/>
   <link name="base_link"/>
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child  link="base_link"/>
-    <!-- raise base_link so footprint sits at ground; wheel_radius=0.072 -->
+
     <origin xyz="0 0 0.072" rpy="0 0 0"/>
   </joint>
 
-  <!-- ================== Chassis ================== -->
   <link name="chassis_link">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="1580"/>
-      <!-- (placeholder inertia) -->
+
       <inertia ixx="1997.86" ixy="0" ixz="0" iyy="442.769" iyz="62.5206" izz="2238.05"/>
     </inertial>
 
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
 
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </collision>
   </link>
@@ -64,7 +62,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -72,12 +70,11 @@
     <origin xyz="-0.18 -0.244 0" rpy="0 0 0"/>
     <parent link="chassis_link"/>
     <child  link="bl_1"/>
-    <!-- rotate around X (matches collision orientation) -->
+
     <axis xyz="1 0 0"/>
     <dynamics friction="12.0316061502"/>
   </joint>
 
-  <!-- Rear RIGHT (drive) -->
   <link name="br_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -91,7 +88,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -103,7 +100,7 @@
     <dynamics friction="12.0316061502"/>
   </joint>
 
-  <!-- Front locked “steer” carriers (fixed at 0 rad) -->
+
   <link name="l_steer_1">
     <inertial><origin xyz="0 0 0"/><mass value="1"/><inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
   </link>
@@ -126,7 +123,6 @@
     <limit lower="0.0" upper="0.0" effort="1e9" velocity="0.0"/>
   </joint>
 
-  <!-- Front LEFT (idler) -->
   <link name="fl_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -140,7 +136,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -151,7 +147,6 @@
     <axis xyz="1 0 0"/>
   </joint>
 
-  <!-- Front RIGHT (idler) -->
   <link name="fr_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -165,7 +160,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -176,7 +171,6 @@
     <axis xyz="1 0 0"/>
   </joint>
 
-  <!-- ================== LiDAR & Lift ================== -->
   <link name="lidar_link">
     <inertial><origin xyz="0 0 0"/><mass value="0.5"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
     <visual><origin xyz="0 0 0"/><geometry><cylinder radius="0.04" length="0.05"/></geometry></visual>
@@ -193,7 +187,7 @@
     <visual>
       <origin xyz="0 0 0.1" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${pkg_share}/meshes/platform.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="package://alphabot_description/meshes/platform.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
     <collision>
@@ -207,7 +201,6 @@
     <child  link="lift_link"/>
   </joint>
 
-  <!-- ================== Camera frames ================== -->
   <link name="camera_mount_link">
     <inertial><origin xyz="0 0 0"/><mass value="0.1"/><inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/></inertial>
   </link>
@@ -231,7 +224,6 @@
     <child  link="camera_optical_frame"/>
   </joint>
 
-  <!-- ================== Gazebo materials/contacts ================== -->
   <gazebo reference="chassis_link"><selfCollide>true</selfCollide><mu1>0.2</mu1><mu2>0.2</mu2></gazebo>
   <gazebo reference="bl_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
   <gazebo reference="br_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
@@ -239,7 +231,6 @@
   <gazebo reference="fr_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
   <gazebo reference="lift_link"><mu1>1e6</mu1><mu2>1e5</mu2><kp>1e5</kp><kd>1</kd><maxVel>0.01</maxVel><minDepth>0.001</minDepth></gazebo>
 
-  <!-- ================== Gazebo: LIDAR ================== -->
   <gazebo reference="lidar_link">
     <sensor name="lidar" type="ray">
       <always_on>true</always_on>
