@@ -1,10 +1,14 @@
 <?xml version="1.0"?>
-<robot name="ackermann_logistic_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="alphabot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Where meshes are (URIs from SDF "model://" mapped to package path) -->
-  <xacro:property name="mesh_dir" value="$(find alphabot_description)/meshes"/>
+  <!-- Resolve the package share to an ABSOLUTE path -->
+  <xacro:property name="pkg_share" value="$(find alphabot_description)"/>
+  <xacro:property name="use_gazebo_camera" value="true"/>
+  <xacro:property name="cmd_vel_topic"     value="/amazon_robot/cmd_vel"/>
+  <xacro:property name="odom_topic"        value="/amazon_robot/odom"/>
+  <xacro:property name="scan_topic"        value="/scan"/>
 
-  <!-- ========== Base & Chassis (as in SDF) ========== -->
+  <!-- ================== Base & Chassis ================== -->
   <link name="base_link"/>
 
   <joint name="chassis_link_joint" type="fixed">
@@ -20,24 +24,22 @@
       <inertia ixx="1997.86" ixy="-3e-05" ixz="-1e-06" iyy="442.769" iyz="62.5206" izz="2238.05"/>
     </inertial>
 
-    <!-- visual == mesh (scale 0.5) -->
     <visual name="chassis_link_visual">
       <origin xyz="0 0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/chassis.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="${pkg_share}/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
 
-    <!-- collision == mesh (scale 0.5), like SDF -->
     <collision name="chassis_link_collision">
       <origin xyz="0 0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/chassis.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="${pkg_share}/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </collision>
   </link>
 
-  <!-- ========== Rear Wheels (revolute in SDF; URDF: continuous, no limits) ========== -->
+  <!-- ================== Rear Wheels ================== -->
   <joint name="bl_axle" type="continuous">
     <origin xyz="-0.18 -0.244 0.0" rpy="0 0 0"/>
     <parent link="chassis_link"/>
@@ -52,16 +54,14 @@
       <mass value="24.5"/>
       <inertia ixx="1.84514" ixy="0" ixz="0" iyy="1.04961" iyz="0" izz="1.04961"/>
     </inertial>
-    <!-- collision == cylinder (pose same as SDF collision) -->
     <collision name="bl_1_collision">
       <origin xyz="0 0 0" rpy="0 1.5708 0"/>
       <geometry><cylinder radius="0.072" length="0.06"/></geometry>
     </collision>
-    <!-- visual == mesh wheel (scale 0.5), so it shows up -->
     <visual name="bl_1_visual">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -87,19 +87,18 @@
     <visual name="br_1_visual">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
 
-  <!-- ========== Steering Knuckles (revolute with limits, as SDF) ========== -->
+  <!-- ================== Front (steering locked) ================== -->
   <joint name="l_steer" type="revolute">
     <origin xyz="-0.236 0.244 0.0" rpy="0 0 0"/>
     <parent link="chassis_link"/>
     <child  link="l_steer_1"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-0.95" upper="0.95" effort="1e9" velocity="1e9"/>
-    <dynamics friction="18.0474092253"/>
+    <limit lower="0.0" upper="0.0" effort="1e9" velocity="0.0"/>
   </joint>
 
   <link name="l_steer_1">
@@ -115,8 +114,7 @@
     <parent link="chassis_link"/>
     <child  link="r_steer_1"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-0.95" upper="0.95" effort="1e9" velocity="1e9"/>
-    <dynamics damping="0.01" friction="18.0474092253"/>
+    <limit lower="0.0" upper="0.0" effort="1e9" velocity="0.0"/>
   </joint>
 
   <link name="r_steer_1">
@@ -127,13 +125,11 @@
     </inertial>
   </link>
 
-  <!-- ========== Front Wheels (continuous) ========== -->
   <joint name="fl_axle" type="continuous">
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="l_steer_1"/>
     <child  link="fl_1"/>
     <axis xyz="-1 0 0"/>
-    <dynamics friction="12.031606150200002"/>
   </joint>
 
   <link name="fl_1">
@@ -149,7 +145,7 @@
     <visual name="fl_1_visual">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -159,7 +155,6 @@
     <parent link="r_steer_1"/>
     <child  link="fr_1"/>
     <axis xyz="-1 0 0"/>
-    <dynamics friction="12.031606150200002"/>
   </joint>
 
   <link name="fr_1">
@@ -175,99 +170,117 @@
     <visual name="fr_1_visual">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.dae" scale="0.5 0.5 0.5"/>
+        <mesh filename="${pkg_share}/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
       </geometry>
     </visual>
   </link>
 
-  <!-- ========== Lift (prismatic, limits as SDF) ========== -->
+  <!-- ================== LiDAR & Lift ================== -->
+  <link name="lidar_link">
+    <inertial><origin xyz="0 0 0"/><mass value="0.5"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
+    <visual><origin xyz="0 0 0"/><geometry><cylinder radius="0.04" length="0.05"/></geometry></visual>
+    <collision><origin xyz="0 0 0"/><geometry><cylinder radius="0.04" length="0.05"/></geometry></collision>
+  </link>
+  <joint name="lidar_joint" type="fixed"><origin xyz="0 0 0.18"/><parent link="base_link"/><child link="lidar_link"/></joint>
+
   <link name="lift_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.1"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
-    </inertial>
+    <inertial><origin xyz="0 0 0"/><mass value="0.1"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
     <visual>
-      <origin xyz="0 0 0.1" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="${mesh_dir}/platform.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
+      <origin xyz="0 0 0.1"/>
+      <geometry><mesh filename="${pkg_share}/meshes/platform.dae" scale="0.5 0.5 0.5"/></geometry>
     </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.2805 0.2 0.03"/>
-      </geometry>
-    </collision>
+    <collision><origin xyz="0 0 0"/><geometry><box size="0.2805 0.2 0.03"/></geometry></collision>
   </link>
+  <joint name="lift_fixed_joint" type="fixed"><origin xyz="0 0 0.02"/><parent link="lidar_link"/><child link="lift_link"/></joint>
 
-  <joint name="lift_fixed_joint" type="fixed">
-    <origin xyz="0 0 0.20" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="lift_link"/>
-  </joint>
+  <!-- ================== Camera frames ================== -->
+  <link name="camera_mount_link"><inertial><origin xyz="0 0 0"/><mass value="0.1"/><inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/></inertial></link>
+  <joint name="camera_mount_joint" type="fixed"><origin xyz="0 0.45 0.09"/><parent link="base_link"/><child link="camera_mount_link"/></joint>
+  <link name="camera_link"/><joint name="camera_joint" type="fixed"><parent link="camera_mount_link"/><child link="camera_link"/></joint>
+  <link name="camera_optical_frame"/><joint name="camera_optical_joint" type="fixed"><origin rpy="0 -1.57079632679 3.14159265359"/><parent link="camera_link"/><child link="camera_optical_frame"/></joint>
 
-  <!-- ========== Gazebo Classic extensions (from your SDF surfaces) ========== -->
-
-  <!-- Chassis friction + self-collide -->
-  <gazebo reference="chassis_link">
-    <selfCollide>true</selfCollide>
-    <mu1>0.2</mu1>
-    <mu2>0.2</mu2>
-  </gazebo>
-
-  <!-- Wheel high friction -->
+  <!-- ================== Gazebo Classic bits ================== -->
+  <gazebo reference="chassis_link"><selfCollide>true</selfCollide><mu1>0.2</mu1><mu2>0.2</mu2></gazebo>
   <gazebo reference="bl_1"><mu1>1000000</mu1><mu2>1000000</mu2></gazebo>
   <gazebo reference="br_1"><mu1>1000000</mu1><mu2>1000000</mu2></gazebo>
   <gazebo reference="fl_1"><mu1>1000000</mu1><mu2>1000000</mu2></gazebo>
   <gazebo reference="fr_1"><mu1>1000000</mu1><mu2>1000000</mu2></gazebo>
+  <gazebo reference="lift_link"><mu1>1000000</mu1><mu2>100000</mu2><kp>1e5</kp><kd>1</kd><maxVel>0.01</maxVel><minDepth>0.001</minDepth></gazebo>
 
-  <!-- Lift contact/friction intents -->
-  <gazebo reference="lift_link">
-    <mu1>1000000</mu1>
-    <mu2>100000</mu2>
-    <kp>1e5</kp>
-    <kd>1</kd>
-    <maxVel>0.01</maxVel>
-    <minDepth>0.001</minDepth>
+  <!-- LiDAR sensor -->
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="ray">
+      <always_on>true</always_on><update_rate>20</update_rate><visualize>true</visualize>
+      <ray>
+        <scan><horizontal><samples>720</samples><resolution>1</resolution><min_angle>-3.14159265</min_angle><max_angle>3.14159265</max_angle></horizontal></scan>
+        <range><min>0.12</min><max>30.0</max><resolution>0.01</resolution></range>
+        <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
+      </ray>
+      <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
+        <ros><remapping>~/out:=${scan_topic}</remapping></ros>
+        <output_type>sensor_msgs/LaserScan</output_type>
+        <frame_name>lidar_link</frame_name>
+      </plugin>
+    </sensor>
   </gazebo>
 
-  <!-- ========== Ackermann Drive Plugin (exactly as in your SDF) ========== -->
+  <!-- Sim camera (optional) -->
+  <xacro:if value="${use_gazebo_camera}">
+    <gazebo reference="camera_link">
+      <sensor name="sim_camera" type="camera">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>1.39626</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+          <clip><near>0.02</near><far>50.0</far></clip>
+        </camera>
+        <plugin name="gazebo_ros_camera" filename="libgazebo_ros_camera.so">
+          <ros>
+            <remapping>image_raw:=/camera/image_raw</remapping>
+            <remapping>camera_info:=/camera/camera_info</remapping>
+            <frame_name>camera_optical_frame</frame_name>
+          </ros>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:if>
+
+  <!-- Make sure joint states publish (helps TF) -->
   <gazebo>
-    <plugin name="ackermann_drive" filename="libgazebo_ros_ackermann_drive.so">
+    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+      <ros/><update_rate>50</update_rate>
+      <joint_name>bl_axle</joint_name><joint_name>br_axle</joint_name>
+      <joint_name>fl_axle</joint_name><joint_name>fr_axle</joint_name>
+      <joint_name>l_steer</joint_name><joint_name>r_steer</joint_name>
+    </plugin>
+  </gazebo>
+
+  <!-- Differential drive -->
+  <gazebo>
+    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
       <ros>
-        <remapping>cmd_vel:=/amazon_robot/cmd_vel</remapping>
-        <remapping>odom:=/amazon_robot/odom</remapping>
-        <remapping>distance:=distance</remapping>
+        <remapping>cmd_vel:=${cmd_vel_topic}</remapping>
+        <remapping>odom:=${odom_topic}</remapping>
       </ros>
+      <update_rate>100</update_rate>
 
-      <update_rate>100.0</update_rate>
+      <left_joint>bl_axle</left_joint>
+      <right_joint>br_axle</right_joint>
 
-      <front_left_joint>fl_axle</front_left_joint>
-      <front_right_joint>fr_axle</front_right_joint>
-      <rear_left_joint>bl_axle</rear_left_joint>
-      <rear_right_joint>br_axle</rear_right_joint>
-      <left_steering_joint>l_steer</left_steering_joint>
-      <right_steering_joint>r_steer</right_steering_joint>
+      <wheel_radius>0.072</wheel_radius>
+      <wheel_diameter>0.144</wheel_diameter>
+      <wheel_separation>0.488</wheel_separation>
 
-      <max_steer>0.52</max_steer>
-      <max_steering_angle>0.64</max_steering_angle>
-      <max_speed>50</max_speed>
-
-      <left_steering_pid_gain>1500 900 450</left_steering_pid_gain>
-      <left_steering_i_range>0 0</left_steering_i_range>
-      <right_steering_pid_gain>1500 900 450</right_steering_pid_gain>
-      <right_steering_i_range>0 0</right_steering_i_range>
-      <linear_velocity_pid_gain>1000 100 10</linear_velocity_pid_gain>
-      <linear_velocity_i_range>0 0</linear_velocity_i_range>
+      <max_wheel_torque>1000</max_wheel_torque>
+      <max_wheel_acceleration>0.0</max_wheel_acceleration>
 
       <publish_odom>true</publish_odom>
       <publish_odom_tf>true</publish_odom_tf>
       <publish_wheel_tf>true</publish_wheel_tf>
-      <publish_distance>true</publish_distance>
 
       <odometry_frame>odom</odometry_frame>
       <robot_base_frame>chassis_link</robot_base_frame>
+      <odometry_source>encoder</odometry_source> <!-- exact, no trailing space -->
     </plugin>
   </gazebo>
 

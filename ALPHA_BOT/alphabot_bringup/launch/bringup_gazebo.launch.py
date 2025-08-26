@@ -1,4 +1,6 @@
+ #!/usr/bin/env python3
 from launch import LaunchDescription
+from launch import conditions
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
@@ -31,11 +33,11 @@ def generate_launch_description():
     use_sim_time_arg = DeclareLaunchArgument("use_sim_time", default_value="true")
     ns_arg = DeclareLaunchArgument("namespace", default_value="", description="ROS namespace")
 
-    # Xacro/exposed robot knobs
-    use_gz_cam_arg = DeclareLaunchArgument("use_gazebo_camera", default_value="false")
-    cmd_vel_arg = DeclareLaunchArgument("cmd_vel_topic", default_value="/amazon_robot/cmd_vel")
-    odom_arg    = DeclareLaunchArgument("odom_topic",     default_value="/amazon_robot/odom")
-    scan_arg    = DeclareLaunchArgument("scan_topic",     default_value="/scan")
+    # Xacro/exposed robot knobs (kept same names you’re passing)
+    use_gz_cam_arg = DeclareLaunchArgument("use_gazebo_camera", default_value="true")
+    cmd_vel_arg    = DeclareLaunchArgument("cmd_vel_topic",     default_value="/amazon_robot/cmd_vel")
+    odom_arg       = DeclareLaunchArgument("odom_topic",        default_value="/amazon_robot/odom")
+    scan_arg       = DeclareLaunchArgument("scan_topic",        default_value="/scan")
 
     # Optional RViz
     use_rviz_arg = DeclareLaunchArgument("use_rviz", default_value="false")
@@ -123,6 +125,7 @@ def generate_launch_description():
         namespace=ns,
         arguments=["-d", rviz_config],
         parameters=[{"use_sim_time": use_sim_time}],
+        condition=conditions.IfCondition(use_rviz),
         output="screen",
     )
 
