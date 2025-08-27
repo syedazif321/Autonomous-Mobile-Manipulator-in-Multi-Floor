@@ -2,9 +2,22 @@
 <package format="3">
   <name>elevator_plugin</name>
   <version>0.0.1</version>
-  <description>Gazebo Elevator Plugin</description>
+  <description>Minimal Gazebo + ROS 2 plugin example</description>
   <maintainer email="you@example.com">Your Name</maintainer>
   <license>Apache-2.0</license>
-  <buildtool_depend>cmake</buildtool_depend>
+
+  <!-- Build tool -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Dependencies -->
+  <depend>rclcpp</depend>
+  <depend>std_srvs</depend>
   <depend>gazebo</depend>
+  <build_depend>gazebo_ros</build_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+
+  <export>
+
+    <gazebo_plugin/>
+  </export>
 </package>

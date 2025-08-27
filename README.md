@@ -10,4 +10,8 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/ama
 
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/home/azif/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor/install/alphabot_description/share
 
-ros2 run elevator_plugin elev_cmd 1
+
+export GAZEBO_PLUGIN_PATH=$HOME/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor/install/elevator_plugin/lib:$GAZEBO_PLUGIN_PATH
+  
+
+ros2 service call /elevator_cmd std_srvs/srv/SetBool "{data: true}"

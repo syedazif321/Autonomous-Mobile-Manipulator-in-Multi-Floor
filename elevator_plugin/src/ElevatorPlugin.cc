@@ -182,7 +182,7 @@ void ElevatorPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   this->dataPtr->node->Init(_model->GetWorld()->Name());
   this->dataPtr->elevatorSub=this->dataPtr->node->Subscribe("~/elevator",&ElevatorPlugin::OnElevator,this);
 
-  // ✅ ROS2 integration via gazebo_ros::Node
+
   this->ros_node_ = gazebo_ros::Node::Get(_sdf);
 
   this->srv_ = this->ros_node_->create_service<std_srvs::srv::SetBool>(
