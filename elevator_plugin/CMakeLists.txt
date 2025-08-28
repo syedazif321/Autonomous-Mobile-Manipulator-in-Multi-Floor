@@ -21,5 +21,6 @@ target_link_libraries(ElevatorPlugin ${GAZEBO_LIBRARIES})
 install(TARGETS ElevatorPlugin
   LIBRARY DESTINATION lib
 )
+ament_environment_hooks("${CMAKE_CURRENT_SOURCE_DIR}/env-hooks/gazebo_plugin_path.dsv.in")
 
 ament_package()

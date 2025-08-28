@@ -1259,7 +1259,7 @@
     </light>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>2.39539 6.60091 3.97865 -0 0.401801 -2.28216</pose>
+        <pose>2.28288 10.4312 8.1647 0 0.490834 -2.14742</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -1778,10 +1778,10 @@
       <pose>-6.91099 6.67572 0 0 0 -1.57228</pose>
     </model>
     <state world_name='default'>
-      <sim_time>2927 143000000</sim_time>
-      <real_time>244 270646821</real_time>
-      <wall_time>1756301847 65135461</wall_time>
-      <iterations>226310</iterations>
+      <sim_time>3222 33000000</sim_time>
+      <real_time>298 687474710</real_time>
+      <wall_time>1756360538 123909246</wall_time>
+      <iterations>294890</iterations>
       <model name='aws_robomaker_warehouse_Bucket_01_020'>
         <pose>0.433449 9.63171 0 0 0 -1.56316</pose>
         <scale>1 1 1</scale>
@@ -2053,19 +2053,19 @@
         </link>
       </model>
       <model name='elevator'>
-        <pose>-2.5 0.199994 0.109086 -0.000124 -0.000155 1.57432</pose>
+        <pose>-2.5 0.199994 0.109088 6.1e-05 -0.00019 1.57434</pose>
         <scale>1 1 1</scale>
         <link name='car_link'>
-          <pose>-2.5 0.199994 0.109086 -0.000124 -0.000155 1.57432</pose>
-          <velocity>-1.4e-05 -0.00054 -0.053032 0.052886 -0.045147 -0.493922</velocity>
-          <acceleration>-0.425385 -0.595139 -1.09116 -3.09355 -1.31206 -1.73955</acceleration>
-          <wrench>-340.308 -476.111 -872.931 0 -0 0</wrench>
+          <pose>-2.5 0.199994 0.109088 6.1e-05 -0.00019 1.57434</pose>
+          <velocity>0.002077 0.000367 -0.047585 0.07147 0.003109 -0.425373</velocity>
+          <acceleration>2.90857 0.288906 4.45882 1.07719 -0.361381 -0.613029</acceleration>
+          <wrench>2326.86 231.125 3567.05 0 -0 0</wrench>
         </link>
         <link name='door_link'>
-          <pose>-2.00388 1.276 1.23432 -0.00015 -0.000162 1.57406</pose>
-          <velocity>0.007735 -0.27343 0.020382 0.05052 -0.041059 -0.438929</velocity>
-          <acceleration>-0.162062 23.0347 -22.858 2.45106 -1.33162 -1.45292</acceleration>
-          <wrench>-0.162062 23.0347 -22.858 0 -0 0</wrench>
+          <pose>-2.00389 1.27597 1.23427 3.3e-05 -0.00019 1.57405</pose>
+          <velocity>0.007988 -0.266066 0.030465 0.073282 0.006241 -0.368534</velocity>
+          <acceleration>0.681358 -59.2991 109.482 -2.79122 -0.718163 0.922426</acceleration>
+          <wrench>0.681358 -59.2991 109.482 0 -0 0</wrench>
         </link>
       </model>
       <model name='grey_wall'>
@@ -2249,10 +2249,10 @@
         </link>
       </model>
       <model name='unit_box_0'>
-        <pose>-2.49281 -0.979263 0.534224 -1e-06 0 0</pose>
-        <scale>2.2377 0.175378 4.42406</scale>
+        <pose>-2.49871 -0.985473 0.534224 -1e-06 0 0</pose>
+        <scale>1 1 1</scale>
         <link name='link'>
-          <pose>-2.49281 -0.979263 0.534224 -1e-06 0 0</pose>
+          <pose>-2.49871 -0.985473 0.534224 -1e-06 0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -3343,14 +3343,14 @@
     <model name='unit_box_0'>
       <link name='link'>
         <inertial>
-          <mass>1</mass>
+          <mass>9.95947</mass>
           <inertia>
-            <ixx>0.166667</ixx>
+            <ixx>16.0673</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.166667</iyy>
+            <iyy>20.313</iyy>
             <iyz>0</iyz>
-            <izz>0.166667</izz>
+            <izz>4.26354</izz>
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
@@ -3361,7 +3361,7 @@
         <visual name='visual'>
           <geometry>
             <box>
-              <size>0.446888 0.591271 0.226037</size>
+              <size>2.26414 0.103696 4.39869</size>
             </box>
           </geometry>
           <material>
@@ -3381,7 +3381,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <box>
-              <size>0.446888 0.591271 0.226037</size>
+              <size>2.26414 0.103696 4.39869</size>
             </box>
           </geometry>
           <surface>
@@ -3433,7 +3433,7 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>-0.118578 -0.786761 0.534224 -1e-06 -0 -0</pose>
+      <pose>-2.49281 -0.979263 0.534224 -1e-06 0 0</pose>
     </model>
   </world>
 </sdf>

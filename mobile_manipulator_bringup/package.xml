@@ -2,19 +2,16 @@
 <package format="3">
   <name>mobile_manipulator_bringup</name>
   <version>0.0.1</version>
-  <description>Combined bringup: bcr_bot + RM-75 arm (no rail)</description>
+  <description>Bringup package for mobile manipulator with linear guide</description>
   <maintainer email="you@example.com">You</maintainer>
   <license>Apache-2.0</license>
 
-  <depend>xacro</depend>
-  <depend>robot_state_publisher</depend>
-  <depend>gazebo_ros</depend>
-  <depend>controller_manager</depend>
-  <depend>joint_state_broadcaster</depend>
-  <depend>spawner</depend>
+  <!-- build system -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>bcr_bot</exec_depend>
-  <exec_depend>rm_description</exec_depend>
-  <exec_depend>rm_gazebo</exec_depend>
-  <exec_depend>rm_75_config</exec_depend>
+  <!-- runtime deps -->
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>position_controllers</exec_depend>
 </package>

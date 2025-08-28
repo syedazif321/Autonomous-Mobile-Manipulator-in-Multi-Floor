@@ -2,10 +2,11 @@
 <robot name="alphabot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- Args / properties -->
-  <xacro:property name="use_gazebo_camera" value="true"/>
-  <xacro:property name="cmd_vel_topic"     value="/amazon_robot/cmd_vel"/>
-  <xacro:property name="odom_topic"        value="/amazon_robot/odom"/>
-  <xacro:property name="scan_topic"        value="/scan"/>
+  <xacro:arg name="scan_topic" default="/scan"/>
+  <xacro:arg name="cmd_vel_topic" default="/amazon_robot/cmd_vel"/>
+  <xacro:arg name="odom_topic" default="/amazon_robot/odom"/>
+  <xacro:arg name="use_gazebo_camera" default="true"/>
+
 
   <!-- ================== Base frames ================== -->
   <link name="base_footprint"/>

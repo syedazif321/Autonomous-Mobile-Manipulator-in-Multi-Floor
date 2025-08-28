@@ -1,7 +1,12 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 from launch import LaunchDescription
 from launch import conditions
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    SetEnvironmentVariable,
+    LogInfo,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     LaunchConfiguration,
@@ -33,13 +38,11 @@ def generate_launch_description():
     use_sim_time_arg = DeclareLaunchArgument("use_sim_time", default_value="true")
     ns_arg = DeclareLaunchArgument("namespace", default_value="", description="ROS namespace")
 
-    # Xacro/exposed robot knobs (kept same names you’re passing)
     use_gz_cam_arg = DeclareLaunchArgument("use_gazebo_camera", default_value="true")
     cmd_vel_arg    = DeclareLaunchArgument("cmd_vel_topic",     default_value="/amazon_robot/cmd_vel")
     odom_arg       = DeclareLaunchArgument("odom_topic",        default_value="/amazon_robot/odom")
     scan_arg       = DeclareLaunchArgument("scan_topic",        default_value="/scan")
 
-    # Optional RViz
     use_rviz_arg = DeclareLaunchArgument("use_rviz", default_value="false")
     rviz_cfg_arg = DeclareLaunchArgument(
         "rviz_config",
@@ -47,10 +50,10 @@ def generate_launch_description():
             get_package_share_directory("alphabot_bringup"),
             "config", "alphabot.rviz"
         ]),
-        description="RViz config (ignored if missing)"
+        description="RViz config"
     )
 
-    # ---------------- LCs ----------------
+    # ---------------- Launch Configs ----------------
     world = LaunchConfiguration("world")
     entity = LaunchConfiguration("entity")
     x = LaunchConfiguration("x")
@@ -71,21 +74,40 @@ def generate_launch_description():
     # ---------------- Robot description from Xacro ----------------
     urdf_file = PathJoinSubstitution([
         get_package_share_directory("alphabot_description"),
-        "urdf", "alphabot.urdf.xacro",
+        "urdf",
+        "alphabot.urdf.xacro",
     ])
 
-    # Important: keep literal spaces between tokens when using Command
-    robot_description_cmd = Command([
+    robot_description_content = Command([
         FindExecutable(name="xacro"), " ",
         urdf_file, " ",
         "use_gazebo_camera:=", use_gazebo_camera, " ",
-        "cmd_vel_topic:=",     cmd_vel_topic,     " ",
-        "odom_topic:=",        odom_topic,        " ",
-        "scan_topic:=",        scan_topic
+        "cmd_vel_topic:=", cmd_vel_topic, " ",
+        "odom_topic:=", odom_topic, " ",
+        "scan_topic:=", scan_topic,
     ])
-    robot_description = ParameterValue(robot_description_cmd, value_type=str)
 
-    # ---------------- Gazebo (Classic) server+client ----------------
+    robot_description = {
+        "robot_description": ParameterValue(robot_description_content, value_type=str)
+    }
+
+    # ---------------- Export ENV VARS ----------------
+    alphabot_desc_share = get_package_share_directory("alphabot_description")
+    workspace_root = os.path.dirname(
+        os.path.dirname(get_package_share_directory("alphabot_bringup"))
+    )
+    elevator_plugin_lib = os.path.join(workspace_root, "install", "elevator_plugin", "lib")
+
+    set_model_path = SetEnvironmentVariable(
+        name="GAZEBO_MODEL_PATH",
+        value=[os.environ.get("GAZEBO_MODEL_PATH", ""), ":", alphabot_desc_share]
+    )
+    set_plugin_path = SetEnvironmentVariable(
+        name="GAZEBO_PLUGIN_PATH",
+        value=[os.environ.get("GAZEBO_PLUGIN_PATH", ""), ":", elevator_plugin_lib]
+    )
+
+    # ---------------- Gazebo ----------------
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory("alphabot_gazebo"), "launch", "gazebo.launch.py")
@@ -98,17 +120,12 @@ def generate_launch_description():
         package="robot_state_publisher",
         executable="robot_state_publisher",
         namespace=ns,
-        parameters=[{
-            "robot_description": robot_description,
-            "use_sim_time": use_sim_time,
-        }],
-        # Subscribe to the global /joint_states even though we're namespaced
+        parameters=[robot_description, {"use_sim_time": use_sim_time}],
         remappings=[("joint_states", "/joint_states")],
         output="screen",
     )
 
-
-    # ---------------- Spawn entity in Gazebo ----------------
+    # ---------------- Spawn entity ----------------
     spawner = Node(
         package="gazebo_ros",
         executable="spawn_entity.py",
@@ -121,7 +138,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # ---------------- Optional RViz2 ----------------
+    # ---------------- RViz ----------------
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -133,10 +150,10 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # args
-        world_arg, entity_arg, x_arg, y_arg, z_arg, yaw_arg, use_sim_time_arg, ns_arg,
+        world_arg, entity_arg, x_arg, y_arg, z_arg, yaw_arg,
+        use_sim_time_arg, ns_arg,
         use_gz_cam_arg, cmd_vel_arg, odom_arg, scan_arg,
         use_rviz_arg, rviz_cfg_arg,
-        # nodes
+        set_model_path, set_plugin_path,
         gazebo, rsp, spawner, rviz,
     ])
