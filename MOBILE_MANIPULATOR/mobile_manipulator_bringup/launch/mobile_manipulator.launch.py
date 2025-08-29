@@ -1,88 +1,86 @@
 #!/usr/bin/env python3
-
 import os
+
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import ExecuteProcess, TimerAction
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, Command
-from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
+from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    # Absolute paths
-    urdf_file = "/home/azif/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor/MOBILE_MANIPULATOR/mobile_manipulator_description/urdf/linear_guide.urdf.xacro"
-    controller_config = "/home/azif/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor/MOBILE_MANIPULATOR/mobile_manipulator_control/config/linear_guide_controllers.yaml"
-    world_file = "/home/azif/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor/ALPHA_BOT/alphabot_gazebo/worlds/no_roof_small_warehouse.world"
+    pkg_desc = get_package_share_directory('mobile_manipulator_description')
+    pkg_control = get_package_share_directory('mobile_manipulator_control')
+    pkg_gazebo = get_package_share_directory('alphabot_gazebo')
 
-    # ✅ Robot description (proper xacro expansion)
-    robot_description = {
-        "robot_description": ParameterValue(
-            Command(["xacro", urdf_file]),  # <-- must be separate list items
-            value_type=str
-        )
-    }
+    urdf_file = os.path.join(pkg_desc, "urdf", "mobile_manipulator.urdf.xacro")
 
-    # World arg
-    world_arg = DeclareLaunchArgument(
-        "world",
-        default_value=world_file,
-        description="Gazebo world file"
+    # Expand xacro → URDF
+    robot_description_content = Command([FindExecutable(name="xacro"), " ", urdf_file])
+    robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}
+
+    # --- Gazebo ---
+    gazebo = ExecuteProcess(
+        cmd=['gazebo', '--verbose', '-s', 'libgazebo_ros_factory.so',
+             os.path.join(pkg_gazebo, 'worlds', 'no_roof_small_warehouse.world')],
+        output='screen'
     )
 
-    # Gazebo
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([FindPackageShare("gazebo_ros"), "launch", "gazebo.launch.py"])
-        ]),
-        launch_arguments={"world": LaunchConfiguration("world")}.items()
-    )
-
-    # Robot State Publisher
-    robot_state_pub = Node(
+    # --- robot_state_publisher ---
+    rsp = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         parameters=[robot_description, {"use_sim_time": True}],
         output="screen"
     )
 
-    # ros2_control
-    ros2_control_node = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[controller_config, robot_description, {"use_sim_time": True}],
-        output="screen"
-    )
-
-    # Spawn entity
+    # --- Spawn robot entity ---
     spawn = Node(
         package="gazebo_ros",
         executable="spawn_entity.py",
-        arguments=["-topic", "robot_description", "-entity", "linear_guide"],
+        arguments=["-topic", "robot_description", "-entity", "mobile_manipulator"],
         output="screen"
     )
 
-    # Controllers
-    spawner_jsb = Node(
+    # --- Controller Spawners (delayed so controller_manager is ready) ---
+    jsb = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "-c", "/controller_manager"],
+        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
         output="screen"
     )
-    spawner_column = Node(
+    diff_drive = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["column_position_controller", "-c", "/controller_manager"],
+        arguments=["diff_drive_base", "--controller-manager", "/controller_manager"],
         output="screen"
     )
+    slider = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["slider_position_controller", "--controller-manager", "/controller_manager"],
+        output="screen"
+    )
+    arm = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["arm_controller", "--controller-manager", "/controller_manager"],
+        output="screen"
+    )
+
+    # Add delays to let gazebo_ros2_control start
+    delayed_jsb = TimerAction(period=3.0, actions=[jsb])
+    delayed_diff = TimerAction(period=4.0, actions=[diff_drive])
+    delayed_slider = TimerAction(period=5.0, actions=[slider])
+    delayed_arm = TimerAction(period=6.0, actions=[arm])
 
     return LaunchDescription([
-        world_arg,
         gazebo,
-        robot_state_pub,
-        ros2_control_node,
+        rsp,
         spawn,
-        spawner_jsb,
-        spawner_column
+        delayed_jsb,
+        delayed_diff,
+        delayed_slider,
+        delayed_arm
     ])

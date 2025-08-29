@@ -15,3 +15,7 @@ export GAZEBO_PLUGIN_PATH=$HOME/projetcs/Autonomous-Mobile-Manipulator-in-Multi-
   
 
 ros2 service call /elevator_cmd std_srvs/srv/SetBool "{data: true}"
+
+
+ros2 launch alphabot_bringup bringup_gazebo.launch.py use_rviz:=true
+

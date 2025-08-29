@@ -1,19 +1,18 @@
 <?xml version="1.0"?>
 <robot name="alphabot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Args / properties -->
+
   <xacro:arg name="scan_topic" default="/scan"/>
   <xacro:arg name="cmd_vel_topic" default="/amazon_robot/cmd_vel"/>
   <xacro:arg name="odom_topic" default="/amazon_robot/odom"/>
   <xacro:arg name="use_gazebo_camera" default="true"/>
 
 
-  <!-- ================== Base frames ================== -->
   <link name="base_footprint"/>
-  <link name="base_link"/>
+  <link name="link_base"/>
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
-    <child  link="base_link"/>
+    <child  link="link_base"/>
     <origin xyz="0 0 0.072" rpy="0 0 0"/>
   </joint>
 
@@ -39,7 +38,7 @@
   </link>
 
   <joint name="chassis_link_joint" type="fixed">
-    <parent link="base_link"/>
+    <parent link="link_base"/>
     <child  link="chassis_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
@@ -176,7 +175,7 @@
   </link>
   <joint name="lidar_joint" type="fixed">
     <origin xyz="0 0 0.18" rpy="0 0 0"/>
-    <parent link="base_link"/>
+    <parent link="link_base"/>
     <child  link="lidar_link"/>
   </joint>
 
@@ -224,7 +223,7 @@
   <!-- Mount pose: match your original SDF orientation, new xyz (0 0.45 0.19) -->
   <joint name="realsense_joint" type="fixed">
     <origin xyz="0 0.45 0.19" rpy="0 0 1.57"/>
-    <parent link="base_link"/>
+    <parent link="link_base"/>
     <child  link="realsense_link"/>
   </joint>
 
@@ -285,19 +284,19 @@
   <gazebo reference="lidar_link">
     <sensor name="lidar" type="ray">
       <always_on>true</always_on>
-      <update_rate>20</update_rate>
+      <update_rate>30</update_rate>
       <visualize>true</visualize>
       <ray>
         <scan>
           <horizontal>
-            <samples>720</samples>
+            <samples>361</samples>
             <resolution>1</resolution>
-            <min_angle>-3.14159265</min_angle>
+            <min_angle>0</min_angle>
             <max_angle>3.14159265</max_angle>
           </horizontal>
         </scan>
-        <range><min>0.12</min><max>20.0</max><resolution>0.01</resolution></range>
-        <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
+        <range><min>0.55</min><max>16.0</max><resolution>0.01</resolution></range>
+        <noise><type>gaussian</type><mean>0.0</mean><stddev>0.0</stddev></noise>
       </ray>
       <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
         <ros><remapping>~/out:=$(arg scan_topic)</remapping></ros>
@@ -308,7 +307,7 @@
   </gazebo>
 
   <!-- ================== Gazebo: joint states + diff drive ================== -->
-  <gazebo>
+  <!-- <gazebo>
     <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
       <update_rate>100</update_rate>
       <joint_name>bl_axle</joint_name>
@@ -342,6 +341,6 @@
       <robot_base_frame>base_footprint</robot_base_frame>
       <odometry_source>0</odometry_source>
     </plugin>
-  </gazebo>
+  </gazebo> -->
 
 </robot>
