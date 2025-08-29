@@ -1,38 +1,24 @@
 <?xml version="1.0"?>
 <robot name="mobile_manipulator" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- ================== INCLUDE SUBMODULES ================== -->
-  <!-- Mobile robot -->
+
   <xacro:include filename="$(find alphabot_description)/urdf/alphabot.urdf.xacro"/>
-
-  <!-- Linear guide -->
   <xacro:include filename="$(find mobile_manipulator_description)/urdf/linear_guide.xacro"/>
-
-  <!-- Realman RM-75 Arm -->
   <xacro:include filename="$(find rm_description)/urdf/rm_75_gazebo.urdf"/>
-
   <xacro:include filename="$(find mobile_manipulator_description)/urdf/mobile_manipulator_ros_contol.xacro"/>
 
 
-  <!-- ================== INTEGRATION ================== -->
-
-  <!-- 1. Mount linear guide column to mobile robot chassis -->
   <joint name="chassis_to_column" type="fixed">
-    <parent link="chassis_link"/>  <!-- from alphabot -->
-    <child  link="column"/>        <!-- from linear guide -->
-    <!-- Adjust placement of linear guide relative to robot base -->
+    <parent link="chassis_link"/>  
+    <child  link="column"/>        
     <origin xyz="0 0 0.33" rpy="0 0 0"/>
   </joint>
 
-  <!-- 2. Prismatic joint already exists: column ↔ slider -->
-
-  <!-- 3. Mount robotic arm base_link to slider -->
   <joint name="slider_to_arm_base" type="fixed">
-    <parent link="slider"/>        <!-- moving part of linear guide -->
-    <child  link="base_link"/>     <!-- arm base_link from rm_75 -->
+    <parent link="slider"/>        
+    <child  link="base_link"/>     
     <origin xyz="0 -0.25 0.13" rpy="0 0 0"/>
   </joint>
-
 
   <link name="world"/>
   <joint name="world_to_robot" type="fixed">
@@ -42,16 +28,10 @@
 
   <gazebo>
     <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-      <!-- robot_description param is provided by robot_state_publisher -->
       <robot_param>robot_description</robot_param>
       <robot_param_node>robot_state_publisher</robot_param_node>
-      <!-- point to your controller config -->
       <parameters>$(find mobile_manipulator_control)/config/controllers.yaml</parameters>
     </plugin>
   </gazebo>
-
-
-
-
 
 </robot>

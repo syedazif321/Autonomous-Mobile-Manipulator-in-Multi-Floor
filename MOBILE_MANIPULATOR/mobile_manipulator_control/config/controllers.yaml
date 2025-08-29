@@ -9,30 +9,46 @@ controller_manager:
       type: diff_drive_controller/DiffDriveController
 
     slider_position_controller:
-      type: joint_trajectory_controller/JointTrajectoryController
+      type: position_controllers/JointGroupPositionController
 
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
 diff_drive_base:
   ros__parameters:
-    left_wheel_names: ["bl_1"]
-    right_wheel_names: ["br_1"]
-    wheel_separation: 0.4
-    wheel_radius: 0.1
-    publish_rate: 50.0
+    left_wheel_names:  ["bl_axle"]
+    right_wheel_names: ["br_axle"]
+    wheel_separation: 0.488
+    wheel_radius: 0.072
     use_stamped_vel: false
-    cmd_vel_timeout: 0.25
+    publish_rate: 50.0
     enable_odom_tf: true
+    odom_frame_id: odom
+    base_frame_id: base_footprint
 
 slider_position_controller:
   ros__parameters:
     joints: ["slider_joint"]
     command_interfaces: ["position"]
     state_interfaces: ["position", "velocity"]
+    gains:
+      p: 200.0
+      i: 0.1
+      d: 10.0
+
 
 arm_controller:
   ros__parameters:
-    joints: ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7"]
+    joints:
+      - joint1
+      - joint2
+      - joint3
+      - joint4
+      - joint5
+      - joint6
+      - joint7
     command_interfaces: ["position"]
     state_interfaces: ["position", "velocity"]
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: true

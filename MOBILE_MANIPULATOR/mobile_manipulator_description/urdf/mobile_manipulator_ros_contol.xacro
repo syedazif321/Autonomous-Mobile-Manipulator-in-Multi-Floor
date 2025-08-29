@@ -1,74 +1,118 @@
 <?xml version="1.0"?>
 <robot name="mobile_manipulator" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- ros2_control hardware and joints -->
+
   <ros2_control name="GazeboSystem" type="system">
     <hardware>
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
 
-    <!-- Mobile base wheels -->
-    <joint name="bl_1">
+
+    <joint name="bl_axle">
       <command_interface name="velocity"/>
-      <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="position"/>
     </joint>
 
-    <joint name="br_1">
+    <joint name="br_axle">
       <command_interface name="velocity"/>
-      <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="position"/>
     </joint>
 
-    <!-- Slider joint -->
     <joint name="slider_joint">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
 
-    <!-- Arm joints -->
     <joint name="joint1">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="joint2">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="joint3">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="joint4">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="joint5">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="joint6">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="joint7">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
   </ros2_control>
+
+
+    <transmission name="bl_axle_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="bl_axle">
+        <hardwareInterface>hardware_interface/VelocityCommandInterface</hardwareInterface>
+    </joint>
+    <actuator name="bl_axle_motor">
+        <hardwareInterface>hardware_interface/VelocityCommandInterface</hardwareInterface>
+    </actuator>
+    </transmission>
+
+    <transmission name="br_axle_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="br_axle">
+        <hardwareInterface>hardware_interface/VelocityCommandInterface</hardwareInterface>
+    </joint>
+    <actuator name="br_axle_motor">
+        <hardwareInterface>hardware_interface/VelocityCommandInterface</hardwareInterface>
+    </actuator>
+    </transmission>
+
+
+  <transmission name="slider_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="slider_joint">
+      <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
+    </joint>
+    <actuator name="slider_motor">
+      <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
+  <xacro:macro name="arm_transmission" params="joint_name">
+    <transmission name="${joint_name}_trans">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${joint_name}">
+        <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
+      </joint>
+      <actuator name="${joint_name}_motor">
+        <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
+      </actuator>
+    </transmission>
+  </xacro:macro>
+
+  <xacro:arm_transmission joint_name="joint1"/>
+  <xacro:arm_transmission joint_name="joint2"/>
+  <xacro:arm_transmission joint_name="joint3"/>
+  <xacro:arm_transmission joint_name="joint4"/>
+  <xacro:arm_transmission joint_name="joint5"/>
+  <xacro:arm_transmission joint_name="joint6"/>
+  <xacro:arm_transmission joint_name="joint7"/>
 
 </robot>
