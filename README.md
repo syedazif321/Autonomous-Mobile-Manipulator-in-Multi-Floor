@@ -19,3 +19,16 @@ ros2 service call /elevator_cmd std_srvs/srv/SetBool "{data: true}"
 
 ros2 launch alphabot_bringup bringup_gazebo.launch.py use_rviz:=true
 
+azif@azif:~/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor$ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.5]" -1
+publisher: beginning loop
+publishing #1: std_msgs.msg.Float64MultiArray(layout=std_msgs.msg.MultiArrayLayout(dim=[], data_offset=0), data=[0.5])
+
+azif@azif:~/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor$ ros2 action send_goal /slider_position_controller/follow_joint_trajectory   control_msgs/action/FollowJointTrajectory "{
+  trajectory: {
+    joint_names: ['slider_joint'],
+    points: [
+      { positions: [0.0], time_from_start: {sec: 0} },
+      { positions: [0.5], time_from_start: {sec: 5} }
+    ]
+  }
+}"

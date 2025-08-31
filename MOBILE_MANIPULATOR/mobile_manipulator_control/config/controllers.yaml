@@ -9,7 +9,7 @@ controller_manager:
       type: diff_drive_controller/DiffDriveController
 
     slider_position_controller:
-      type: position_controllers/JointGroupPositionController
+      type: joint_trajectory_controller/JointTrajectoryController
 
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
@@ -18,7 +18,7 @@ diff_drive_base:
   ros__parameters:
     left_wheel_names:  ["bl_axle"]
     right_wheel_names: ["br_axle"]
-    wheel_separation: 0.488
+    wheel_separation: 0.36   
     wheel_radius: 0.072
     use_stamped_vel: false
     publish_rate: 50.0
