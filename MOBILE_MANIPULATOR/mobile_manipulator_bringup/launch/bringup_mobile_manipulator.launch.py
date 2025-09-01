@@ -70,7 +70,7 @@ def generate_launch_description():
     arm_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["arm_controller", "-c", "/controller_manager"],
+        arguments=["rm_group_controller", "-c", "/controller_manager"],
         output="screen"
     )
 

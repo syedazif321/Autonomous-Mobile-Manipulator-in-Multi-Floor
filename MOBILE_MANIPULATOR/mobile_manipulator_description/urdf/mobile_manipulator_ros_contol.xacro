@@ -6,13 +6,14 @@
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
 
-
+    <!-- Slider -->
     <joint name="slider_joint">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
 
+    <!-- 7 DOF Arm -->
     <joint name="joint1">
       <command_interface name="position"/>
       <state_interface name="position"/>
@@ -49,35 +50,5 @@
       <state_interface name="velocity"/>
     </joint>
   </ros2_control>
-
-  <transmission name="slider_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="slider_joint">
-      <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
-    </joint>
-    <actuator name="slider_motor">
-      <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
-    </actuator>
-  </transmission>
-
-  <xacro:macro name="arm_transmission" params="joint_name">
-    <transmission name="${joint_name}_trans">
-      <type>transmission_interface/SimpleTransmission</type>
-      <joint name="${joint_name}">
-        <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
-      </joint>
-      <actuator name="${joint_name}_motor">
-        <hardwareInterface>hardware_interface/PositionCommandInterface</hardwareInterface>
-      </actuator>
-    </transmission>
-  </xacro:macro>
-
-  <xacro:arm_transmission joint_name="joint1"/>
-  <xacro:arm_transmission joint_name="joint2"/>
-  <xacro:arm_transmission joint_name="joint3"/>
-  <xacro:arm_transmission joint_name="joint4"/>
-  <xacro:arm_transmission joint_name="joint5"/>
-  <xacro:arm_transmission joint_name="joint6"/>
-  <xacro:arm_transmission joint_name="joint7"/>
 
 </robot>
