@@ -60,12 +60,12 @@ def generate_launch_description():
         output="screen"
     )
 
-    base_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["diff_drive_base", "-c", "/controller_manager"],
-        output="screen"
-    )
+    # base_spawner = Node(
+    #     package="controller_manager",
+    #     executable="spawner",
+    #     arguments=["diff_drive_base", "-c", "/controller_manager"],
+    #     output="screen"
+    # )
 
     arm_spawner = Node(
         package="controller_manager",
@@ -111,7 +111,7 @@ def generate_launch_description():
         rsp,
         spawner,
         jsb_spawner,
-        base_spawner,
+        # base_spawner,
         arm_spawner,
         slider_spawner,
         # move_group,

@@ -19,11 +19,11 @@ ros2 service call /elevator_cmd std_srvs/srv/SetBool "{data: true}"
 
 ros2 launch alphabot_bringup bringup_gazebo.launch.py use_rviz:=true
 
-azif@azif:~/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor$ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.5]" -1
+ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.5]" -1
 publisher: beginning loop
 publishing #1: std_msgs.msg.Float64MultiArray(layout=std_msgs.msg.MultiArrayLayout(dim=[], data_offset=0), data=[0.5])
 
-azif@azif:~/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor$ ros2 action send_goal /slider_position_controller/follow_joint_trajectory   control_msgs/action/FollowJointTrajectory "{
+ros2 action send_goal /slider_position_controller/follow_joint_trajectory   control_msgs/action/FollowJointTrajectory "{
   trajectory: {
     joint_names: ['slider_joint'],
     points: [
@@ -32,3 +32,6 @@ azif@azif:~/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor$ ros2 action s
     ]
   }
 }"
+ros2 topic pub /amazon_robot/cmd_vel geometry_msgs/Twist "{linear: {x: -0.3}, angular: {z: -0.2}}" -r 10
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/amazon_robot/cmd_vel
+
