@@ -5,27 +5,14 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    # diff_drive_base:
-    #   type: diff_drive_controller/DiffDriveController
-
+ 
     slider_position_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
-    arm_controller:
+    rm_group_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
 
-# diff_drive_base:
-#   ros__parameters:
-#     left_wheel_names: ["bl_axle"]
-#     right_wheel_names: ["br_axle"]
-#     wheel_separation: 0.488
-#     wheel_radius: 0.072 
-#     use_stamped_vel: false
-#     enable_odom_tf: true
-#     odom_frame_id: "odom"
-#     base_frame_id: "base_footprint"
-#     publish_rate: 100.0
 
 
 slider_position_controller:
@@ -39,7 +26,7 @@ slider_position_controller:
       d: 10.0
 
 
-arm_controller:
+rm_group_controller:
   ros__parameters:
     joints:
       - joint1
