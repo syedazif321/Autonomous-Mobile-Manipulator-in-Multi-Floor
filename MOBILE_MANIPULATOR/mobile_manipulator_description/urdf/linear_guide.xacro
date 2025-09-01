@@ -5,24 +5,28 @@
   <link name="column">
     <visual>
       <geometry>
-        <box size="0.1 0.1 1.0"/> 
+        <box size="0.08 0.08 0.8"/> 
       </geometry>
-      <origin xyz="0 -0.1 0.5" rpy="0 0 0"/> 
+      <origin xyz="0 -0.1 0.37" rpy="0 0 0"/> 
       <material name="grey">
-        <color rgba="0.5 0.5 0.5 1.0"/>
+        <color rgba="0.5 0.5 0.5 0.8"/>
       </material>
     </visual>
     <collision>
       <geometry>
-        <box size="0.1 0.1 1.0"/>
+        <box size="0.08 0.08 0.8"/> 
       </geometry>
-      <origin xyz="0 -0.1 0.5" rpy="0 0 0"/> 
+      <origin xyz="0 -0.1 0.37" rpy="0 0 0"/> 
     </collision>
     <inertial>
       <mass value="5.0"/>
       <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0.0" ixz="0.0" iyz="0.0"/>
     </inertial>
   </link>
+
+    <gazebo reference="column">
+      <material>Gazebo/Orange</material>
+  </gazebo>
 
   <link name="slider">
     <visual>
@@ -46,7 +50,9 @@
       <inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0.0" ixz="0.0" iyz="0.0"/>
     </inertial>
   </link>
-
+ <gazebo reference="slider">
+      <material>Gazebo/Grey</material>
+  </gazebo>
 
   <joint name="slider_joint" type="prismatic">
     <parent link="column"/>

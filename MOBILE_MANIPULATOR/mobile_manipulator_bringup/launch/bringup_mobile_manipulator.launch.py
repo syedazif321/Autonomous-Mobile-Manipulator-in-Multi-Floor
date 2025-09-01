@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, Command, FindExecutable, LaunchConfiguration
 from launch_ros.actions import Node
@@ -26,10 +27,11 @@ def generate_launch_description():
     )
     use_sim_time_arg = DeclareLaunchArgument("use_sim_time", default_value="true")
     entity_arg = DeclareLaunchArgument("entity", default_value="mobile_manipulator")
+    use_rviz_arg = DeclareLaunchArgument("use_rviz", default_value="true")
 
-    # ---------------- Robot Description (URDF/Xacro) ----------------
-    urdf_file = os.path.join(pkg_desc, "urdf", "mobile_manipulator.urdf.xacro")
-    robot_description_content = Command([FindExecutable(name="xacro"), " ", urdf_file])
+    # ---------------- Full Robot Description for Gazebo ----------------
+    urdf_file_full = os.path.join(pkg_desc, "urdf", "mobile_manipulator.urdf.xacro")
+    robot_description_content = Command([FindExecutable(name="xacro"), " ", urdf_file_full])
     robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=None)}
 
     # ---------------- Gazebo ----------------
@@ -84,9 +86,10 @@ def generate_launch_description():
         output="screen"
     )
 
-    # ---------------- MoveIt 2 (for the Arm) ----------------
+    # ---------------- MoveIt 2 (Arm Only) ----------------
     moveit_config = MoveItConfigsBuilder(
-        "rm_75_description", package_name="rm_75_config"
+        "rm_description",  # ✅ correct package (contains URDF of arm)
+        package_name="rm_75_config"
     ).to_moveit_configs()
 
     move_group = Node(
@@ -97,6 +100,7 @@ def generate_launch_description():
     )
 
     rviz = Node(
+        condition=IfCondition(LaunchConfiguration("use_rviz")),
         package="rviz2",
         executable="rviz2",
         arguments=["-d", str(moveit_config.package_path / "config/moveit.rviz")],
@@ -109,7 +113,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        world_arg, use_sim_time_arg, entity_arg,
+        world_arg, use_sim_time_arg, entity_arg, use_rviz_arg,
         gazebo,
         rsp,
         spawner,
