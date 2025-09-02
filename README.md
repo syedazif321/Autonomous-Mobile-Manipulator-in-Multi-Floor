@@ -35,3 +35,5 @@ ros2 action send_goal /slider_position_controller/follow_joint_trajectory   cont
 ros2 topic pub /amazon_robot/cmd_vel geometry_msgs/Twist "{linear: {x: -0.3}, angular: {z: -0.2}}" -r 10
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/amazon_robot/cmd_vel
 
+
+ros2 launch rm_75_config moveit_bringup.launch.py
