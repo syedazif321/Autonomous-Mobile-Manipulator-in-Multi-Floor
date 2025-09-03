@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
 <robot name="mobile_manipulator" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- ros2_control setup -->
   <ros2_control name="GazeboSystem" type="system">
     <hardware>
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
 
-    <!-- Slider -->
+
     <joint name="slider_joint">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
 
-    <!-- 7 DOF Arm -->
+
     <joint name="joint1">
       <command_interface name="position"/>
       <state_interface name="position"/>
@@ -53,8 +52,6 @@
 
   </ros2_control>
 
-
-  <!-- Transmissions for each controllable joint -->
   <transmission name="slider_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="slider_joint">

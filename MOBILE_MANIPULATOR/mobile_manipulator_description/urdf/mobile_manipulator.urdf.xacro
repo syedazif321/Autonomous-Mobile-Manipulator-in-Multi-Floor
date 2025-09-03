@@ -19,12 +19,6 @@
     <child  link="base_link"/>     
     <origin xyz="0 -0.25 0.06" rpy="0 0 0"/>
   </joint>
-<!-- 
-  <link name="world"/>
-  <joint name="world_to_robot" type="fixed">
-    <parent link="world"/>
-    <child link="base_footprint"/> 
-  </joint> -->
 
   <gazebo>
     <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">

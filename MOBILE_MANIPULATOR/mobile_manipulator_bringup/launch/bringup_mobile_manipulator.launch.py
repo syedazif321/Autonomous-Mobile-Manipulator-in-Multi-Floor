@@ -26,7 +26,7 @@ def generate_launch_description():
     urdf_file = os.path.join(pkg_desc, "urdf", "mobile_manipulator.urdf.xacro")
     robot_description = {
         "robot_description": ParameterValue(
-            Command([FindExecutable(name="xacro"), " ", urdf_file]), value_type=str
+            Command([FindExecutable(name="xacro"), " ", urdf_file]), value_type=None
         )
     }
 
