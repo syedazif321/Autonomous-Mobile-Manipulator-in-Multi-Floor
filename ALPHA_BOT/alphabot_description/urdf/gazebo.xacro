@@ -77,9 +77,9 @@
 
         <gazebo reference="two_d_lidar">
             <gravity>true</gravity>
-            <sensor type="ray" name="two_d_lidar">
+            <sensor type="gpu_ray" name="two_d_lidar">
                 <pose>0 0 0 0 0 0</pose>
-                <visualize>false</visualize>
+                <visualize>true</visualize>
                 <update_rate>${two_d_lidar_update_rate}</update_rate>
                 <ray>
                     <scan>
@@ -103,7 +103,8 @@
                 </ray>
                 <plugin name="gazebo_ros_laser" filename="libgazebo_ros_ray_sensor.so">
                     <ros>
-                        <remapping>~/out:=$(arg robot_namespace)/scan</remapping>
+                        <remapping>~/out:=scan</remapping>
+
                     </ros>
                     <output_type>sensor_msgs/LaserScan</output_type>
                     <frame_name>two_d_lidar</frame_name>

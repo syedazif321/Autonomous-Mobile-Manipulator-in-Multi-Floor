@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, FindExecutable, Command, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
+from launch.event_handlers import OnProcessExit
 
 
 def generate_launch_description():
@@ -22,7 +23,7 @@ def generate_launch_description():
     use_sim_time_arg = DeclareLaunchArgument("use_sim_time", default_value="true")
     entity_arg = DeclareLaunchArgument("entity", default_value="mobile_manipulator")
 
-    # --- Robot Description (full robot) ---
+    # --- Robot Description ---
     urdf_file = os.path.join(pkg_desc, "urdf", "mobile_manipulator.urdf.xacro")
     robot_description = {
         "robot_description": ParameterValue(
@@ -44,7 +45,7 @@ def generate_launch_description():
         output="screen"
     )
 
-    # --- Spawn ---
+    # --- Spawn robot entity ---
     spawner = Node(
         package="gazebo_ros",
         executable="spawn_entity.py",
@@ -74,12 +75,34 @@ def generate_launch_description():
         output="screen"
     )
 
+    # --- Event chaining ---
+    load_jsb = RegisterEventHandler(
+        OnProcessExit(
+            target_action=spawner,
+            on_exit=[jsb_spawner],
+        )
+    )
+
+    load_arm = RegisterEventHandler(
+        OnProcessExit(
+            target_action=jsb_spawner,
+            on_exit=[arm_spawner],
+        )
+    )
+
+    load_slider = RegisterEventHandler(
+        OnProcessExit(
+            target_action=arm_spawner,
+            on_exit=[slider_spawner],
+        )
+    )
+
     return LaunchDescription([
         world_arg, use_sim_time_arg, entity_arg,
         gazebo,
         rsp,
         spawner,
-        jsb_spawner,
-        arm_spawner,
-        slider_spawner,
+        load_jsb,
+        load_arm,
+        load_slider,
     ])

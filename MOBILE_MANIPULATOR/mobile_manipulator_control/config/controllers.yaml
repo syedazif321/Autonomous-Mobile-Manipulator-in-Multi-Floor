@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz
+    update_rate: 100  
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
@@ -23,7 +23,7 @@ slider_position_controller:
       - velocity
     state_publish_rate: 50.0
     action_monitor_rate: 20.0
-    gains:  # These gains are ignored by trajectory_controller (only for PID controllers)
+    gains: 
       p: 200.0
       i: 0.1
       d: 10.0
@@ -47,4 +47,4 @@ rm_group_controller:
     state_publish_rate: 50.0
     action_monitor_rate: 20.0
     allow_partial_joints_goal: true
-    interpolation_method: splines   # <- recommended, matches log output
+    interpolation_method: splines  
