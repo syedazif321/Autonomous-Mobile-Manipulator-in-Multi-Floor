@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 from launch import LaunchDescription
-from launch import conditions
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
     SetEnvironmentVariable,
-    LogInfo,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
@@ -43,16 +41,6 @@ def generate_launch_description():
     odom_arg       = DeclareLaunchArgument("odom_topic",        default_value="/amazon_robot/odom")
     scan_arg       = DeclareLaunchArgument("scan_topic",        default_value="/scan")
 
-    use_rviz_arg = DeclareLaunchArgument("use_rviz", default_value="false")
-    rviz_cfg_arg = DeclareLaunchArgument(
-        "rviz_config",
-        default_value=PathJoinSubstitution([
-            get_package_share_directory("alphabot_bringup"),
-            "config", "alphabot.rviz"
-        ]),
-        description="RViz config"
-    )
-
     # ---------------- Launch Configs ----------------
     world = LaunchConfiguration("world")
     entity = LaunchConfiguration("entity")
@@ -67,9 +55,6 @@ def generate_launch_description():
     cmd_vel_topic = LaunchConfiguration("cmd_vel_topic")
     odom_topic = LaunchConfiguration("odom_topic")
     scan_topic = LaunchConfiguration("scan_topic")
-
-    use_rviz = LaunchConfiguration("use_rviz")
-    rviz_config = LaunchConfiguration("rviz_config")
 
     # ---------------- Robot description from Xacro ----------------
     urdf_file = PathJoinSubstitution([
@@ -138,22 +123,10 @@ def generate_launch_description():
         output="screen",
     )
 
-    # ---------------- RViz ----------------
-    rviz = Node(
-        package="rviz2",
-        executable="rviz2",
-        namespace=ns,
-        arguments=["-d", rviz_config],
-        parameters=[{"use_sim_time": use_sim_time}],
-        condition=conditions.IfCondition(use_rviz),
-        output="screen",
-    )
-
     return LaunchDescription([
         world_arg, entity_arg, x_arg, y_arg, z_arg, yaw_arg,
         use_sim_time_arg, ns_arg,
         use_gz_cam_arg, cmd_vel_arg, odom_arg, scan_arg,
-        use_rviz_arg, rviz_cfg_arg,
         set_model_path, set_plugin_path,
-        gazebo, rsp, spawner, rviz,
+        gazebo, rsp, spawner,
     ])

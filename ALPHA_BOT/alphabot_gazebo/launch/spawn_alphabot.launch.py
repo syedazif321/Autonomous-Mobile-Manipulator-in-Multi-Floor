@@ -1,28 +1,38 @@
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
+#!/usr/bin/env python3
 import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration, Command
+from launch_ros.actions import Node
 
 def generate_launch_description():
-    gz = os.path.join(get_package_share_directory("alphabot_gazebo"), "launch", "gazebo.launch.py")
-    desc = os.path.join(get_package_share_directory("alphabot_description"), "urdf", "alphabot.urdf.xacro")
+    desc_pkg = get_package_share_directory('alphabot_description')
+    xacro_file = os.path.join(desc_pkg, 'urdf', 'alphabot.urdf.xacro')
 
-    rsp = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        parameters=[{"robot_description": f"$(xacro {desc})"}, {"use_sim_time": True}],
-        output="screen",
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+
+    # robot_state_publisher
+    robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'robot_description': Command(['xacro ', xacro_file, ' sim_gazebo:=true'])
+        }]
     )
-    spawner = Node(
-        package="gazebo_ros",
-        executable="spawn_entity.py",
-        arguments=["-entity", "alphabot", "-topic", "robot_description"],
-        output="screen",
+
+    # spawn_entity
+    spawn_entity = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=['-topic', 'robot_description', '-entity', 'alphabot'],
+        output='screen'
     )
+
     return LaunchDescription([
-        IncludeLaunchDescription(PythonLaunchDescriptionSource(gz)),
-        rsp,
-        spawner
+        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        robot_state_publisher,
+        spawn_entity
     ])

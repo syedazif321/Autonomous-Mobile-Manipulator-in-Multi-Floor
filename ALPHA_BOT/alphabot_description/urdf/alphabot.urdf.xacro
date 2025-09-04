@@ -1,347 +1,224 @@
 <?xml version="1.0"?>
-<robot name="alphabot" xmlns:xacro="http://www.ros.org/wiki/xacro">
-
-  <!-- Args / properties -->
-  <xacro:arg name="scan_topic" default="/scan"/>
-  <xacro:arg name="cmd_vel_topic" default="/amazon_robot/cmd_vel"/>
-  <xacro:arg name="odom_topic" default="/amazon_robot/odom"/>
-  <xacro:arg name="use_gazebo_camera" default="true"/>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bcr_bot">
 
 
-  <!-- ================== Base frames ================== -->
-  <link name="base_footprint"/>
-  <link name="base_link"/>
-  <joint name="base_joint" type="fixed">
-    <parent link="base_footprint"/>
-    <child  link="base_link"/>
-    <origin xyz="0 0 0.072" rpy="0 0 0"/>
-  </joint>
+    <xacro:property name="chassis_mass" value="70"/>
+    <xacro:property name="chassis_length" value="0.9"/>
+    <xacro:property name="chassis_width" value="0.64"/>
+    <xacro:property name="chassis_height" value="0.19"/>
 
-  <!-- ================== Chassis ================== -->
-  <link name="chassis_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="1580"/>
-      <inertia ixx="1997.86" ixy="0" ixz="0" iyy="442.769" iyz="62.5206" izz="2238.05"/>
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/chassis.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </collision>
-  </link>
+    <xacro:property name="traction_wheel_mass" value="1"/>
+    <xacro:property name="traction_wheel_base" value="0.88"/>
+    <xacro:property name="traction_max_wheel_torque" value="20000"/>
+    <xacro:property name="traction_wheel_friction" value="5.0"/>
 
-  <joint name="chassis_link_joint" type="fixed">
-    <parent link="base_link"/>
-    <child  link="chassis_link"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-  </joint>
+    <xacro:property name="trolley_wheel_mass" value="0.1"/>
+    <xacro:property name="trolley_track_width" value="0.54"/>
+    <xacro:property name="trolley_wheel_friction" value="0.0"/>
+    <xacro:property name="trolley_wheel_radius" value="0.06"/>
 
-  <!-- ================== Wheels ================== -->
-  <!-- Rear LEFT -->
-  <link name="bl_1">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="24.5"/>
-      <inertia ixx="1.84514" ixy="0" ixz="0" iyy="1.04961" iyz="0" izz="1.04961"/>
-    </inertial>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
-      <geometry><cylinder radius="0.072" length="0.06"/></geometry>
-    </collision>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </visual>
-  </link>
-  <joint name="bl_axle" type="continuous">
-    <origin xyz="-0.18 -0.244 0" rpy="0 0 0"/>
-    <parent link="chassis_link"/>
-    <child  link="bl_1"/>
-    <axis xyz="1 0 0"/>
-    <dynamics friction="12.0316061502"/>
-  </joint>
+    <xacro:property name="eps" value="0.002"/>
 
-  <!-- Rear RIGHT -->
-  <link name="br_1">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="24.5"/>
-      <inertia ixx="1.84514" ixy="0" ixz="0" iyy="1.04961" iyz="0" izz="1.04961"/>
-    </inertial>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
-      <geometry><cylinder radius="0.072" length="0.06"/></geometry>
-    </collision>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </visual>
-  </link>
-  <joint name="br_axle" type="continuous">
-    <origin xyz="0.18 -0.244 0" rpy="0 0 0"/>
-    <parent link="chassis_link"/>
-    <child  link="br_1"/>
-    <axis xyz="1 0 0"/>
-    <dynamics friction="12.0316061502"/>
-  </joint>
+    <xacro:property name="traction_wheel_radius" value="0.1"/>
+    <xacro:property name="traction_wheel_width" value="0.05"/>
+    <xacro:property name="traction_track_width" value="0.6"/>
 
-  <link name="l_steer_1">
-    <inertial><origin xyz="0 0 0"/><mass value="1"/><inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
-  </link>
-  <joint name="l_steer" type="revolute">
-    <origin xyz="-0.236 0.244 0" rpy="0 0 0"/>
-    <parent link="chassis_link"/>
-    <child  link="l_steer_1"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="0.0" upper="0.0" effort="1e9" velocity="0.0"/>
-  </joint>
+    <xacro:property name="two_d_lidar_update_rate" value="30"/>
+    <xacro:property name="two_d_lidar_sample_size" value="361"/>
+    <xacro:property name="two_d_lidar_min_angle" value="0"/>
+    <xacro:property name="two_d_lidar_max_angle" value="360"/>
+    <xacro:property name="two_d_lidar_min_range" value="0.12"/>
+    <xacro:property name="two_d_lidar_max_range" value="16"/>
 
-  <link name="r_steer_1">
-    <inertial><origin xyz="0 0 0"/><mass value="1"/><inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
-  </link>
-  <joint name="r_steer" type="revolute">
-    <origin xyz="0.236 0.244 0" rpy="0 0 0"/>
-    <parent link="chassis_link"/>
-    <child  link="r_steer_1"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="0.0" upper="0.0" effort="1e9" velocity="0.0"/>
-  </joint>
+    <xacro:property name="camera_baseline" value="0.06"/>
+    <xacro:property name="camera_height" value="0.10"/>
+    <xacro:property name="camera_horizontal_fov" value="60"/>
 
-  <!-- Front wheels -->
-  <link name="fl_1">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="24.5"/>
-      <inertia ixx="1.84514" ixy="0" ixz="0" iyy="1.04961" iyz="0" izz="1.04961"/>
-    </inertial>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
-      <geometry><cylinder radius="0.072" length="0.06"/></geometry>
-    </collision>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </visual>
-  </link>
-  <joint name="fl_axle" type="continuous">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <parent link="l_steer_1"/>
-    <child  link="fl_1"/>
-    <axis xyz="1 0 0"/>
-  </joint>
+    <xacro:arg name="robot_namespace" default=""/>
+    <xacro:arg name="wheel_odom_topic" default="odom" />
+    <xacro:arg name="camera_enabled" default="true" />
+    <xacro:arg name="stereo_camera_enabled" default="false" />
+    <xacro:arg name="two_d_lidar_enabled" default="true" />
+    <xacro:arg name="publish_wheel_odom_tf" default="true" />
+    <xacro:arg name="conveyor_enabled" default="false"/>
+    <xacro:arg name="ground_truth_frame" default="map"/>
+    <xacro:arg name="sim_gazebo" default="true" />
+    <xacro:arg name="sim_ign" default="false" />
+    <xacro:arg name="sim_gz" default="false" />
+    <xacro:arg name="odometry_source" default="world" />
 
-  <link name="fr_1">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="24.5"/>
-      <inertia ixx="1.84514" ixy="0" ixz="0" iyy="1.04961" iyz="0" izz="1.04961"/>
-    </inertial>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
-      <geometry><cylinder radius="0.072" length="0.06"/></geometry>
-    </collision>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/wheel.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </visual>
-  </link>
-  <joint name="fr_axle" type="continuous">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <parent link="r_steer_1"/>
-    <child  link="fr_1"/>
-    <axis xyz="1 0 0"/>
-  </joint>
+    <xacro:property name="odometry_source" value="$(arg odometry_source)"/>
 
-  <!-- ================== LiDAR & Lift ================== -->
-  <link name="lidar_link">
-    <inertial><origin xyz="0 0 0"/><mass value="0.5"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
-    <visual><origin xyz="0 0 0"/><geometry><cylinder radius="0.04" length="0.05"/></geometry></visual>
-    <collision><origin xyz="0 0 0"/><geometry><cylinder radius="0.04" length="0.05"/></geometry></collision>
-  </link>
-  <joint name="lidar_joint" type="fixed">
-    <origin xyz="0 0 0.18" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child  link="lidar_link"/>
-  </joint>
 
-  <link name="lift_link">
-    <inertial><origin xyz="0 0 0"/><mass value="0.1"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
-    <visual>
-      <origin xyz="0 0 0.1" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/platform.dae" scale="0.5 0.5 0.5"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><box size="0.2805 0.2 0.03"/></geometry>
-    </collision>
-  </link>
-  <joint name="lift_fixed_joint" type="fixed">
-    <origin xyz="0 0 0.02" rpy="0 0 0"/>
-    <parent link="lidar_link"/>
-    <child  link="lift_link"/>
-  </joint>
+    <xacro:include filename="$(find alphabot_description)/urdf/materials.xacro"/>
+    <xacro:include filename="$(find alphabot_description)/urdf/macros.xacro"/>
 
-  <!-- ================== RealSense D435 ================== -->
-  <!-- Camera body (mesh orientation baked in visuals; TF comes from joints) -->
-  <link name="realsense_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 1.57"/>
-      <mass value="0.0615752"/>
-      <inertia ixx="9.108e-05" ixy="0" ixz="0" iyy="2.51e-06" iyz="0" izz="8.931e-05"/>
-    </inertial>
-    <visual name="visual">
-      <origin xyz="0 0 0" rpy="0 0 1.57"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/RealSense_D435/meshes/realsense.dae"/>
-      </geometry>
-    </visual>
-    <collision name="collision">
-     <origin xyz="0 0 0" rpy="0 0 1.57"/>
-      <geometry>
-        <mesh filename="package://alphabot_description/meshes/RealSense_D435/meshes/realsense.dae"/>
-      </geometry>
-    </collision>
-  </link>
+  
+    <xacro:include filename="$(find alphabot_description)/urdf/gazebo.xacro"/>
+  
 
-  <!-- Mount pose: match your original SDF orientation, new xyz (0 0.45 0.19) -->
-  <joint name="realsense_joint" type="fixed">
-    <origin xyz="0 0.45 0.19" rpy="0 0 1.57"/>
-    <parent link="base_link"/>
-    <child  link="realsense_link"/>
-  </joint>
 
-  <!-- Depth frames (REP-105) -->
-  <link name="realsense_depth_frame"/>
-  <joint name="realsense_depth_frame_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="-1.57 0 3.14"/>
-    <parent link="realsense_link"/>
-    <child  link="realsense_depth_frame"/>
-  </joint>
+    <link name="base_footprint"/>
 
-  <link name="realsense_depth_optical_frame"/>
-  <joint name="realsense_depth_optical_joint" type="fixed">
-    <!-- X right, Y down, Z forward -->
-    <origin xyz="0 0 0" rpy="-1.57 -1.57 1.57"/>
-    <parent link="realsense_depth_frame"/>
-    <child  link="realsense_depth_optical_frame"/>
-  </joint>
+    <link name="link_base"/>
 
-  <!-- Gazebo sensor: single depth cam (image + info + point cloud) -->
-  <gazebo reference="realsense_link">
-    <sensor name="realsense_depth_camera" type="depth">
-      <always_on>1</always_on>
-      <update_rate>30</update_rate>
-      <visualize>0</visualize>
-      <!-- No extra rotation; joint above defines the body orientation -->
-      <pose>0 0 0 0 0 0</pose>
+    <joint name="base_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="link_base"/>
+        <origin xyz="0.0 0 ${chassis_height/2 + traction_wheel_radius}" rpy="0 0 0.0" />
+    </joint>
 
-      <camera name="depth_camera">
-        <horizontal_fov>1.0472</horizontal_fov>
-        <image><width>640</width><height>480</height><format>B8G8R8</format></image>
-        <clip><near>0.01</near><far>10</far></clip>
-      </camera>
+    <link name="chassis_link">
 
-      <plugin name="realsense_depth_plugin" filename="libgazebo_ros_camera.so">
-        <ros>
-          <remapping>image_raw:=/realsense_depth_camera/depth/image_raw</remapping>
-          <remapping>camera_info:=/realsense_depth_camera/depth/camera_info</remapping>
-          <remapping>points:=/realsense_depth_camera/points</remapping>
-        </ros>
-        <frame_name>realsense_depth_optical_frame</frame_name>
-        <output_pointcloud>true</output_pointcloud>
-        <pointCloudCutoff>0.01</pointCloudCutoff>
-        <pointCloudCutoffMax>10.0</pointCloudCutoffMax>
-      </plugin>
-    </sensor>
-  </gazebo>
+        <collision>
+            <origin xyz="0 0 -0.05" rpy="0 0 0" />
+            <geometry>
+                <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+            </geometry>
+        </collision>
 
-  <!-- ================== Gazebo materials/contacts ================== -->
-  <gazebo reference="chassis_link"><selfCollide>true</selfCollide><mu1>0.2</mu1><mu2>0.2</mu2></gazebo>
-  <gazebo reference="bl_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
-  <gazebo reference="br_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
-  <gazebo reference="fl_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
-  <gazebo reference="fr_1"><mu1>1e6</mu1><mu2>1e6</mu2></gazebo>
-  <gazebo reference="lift_link"><mu1>1e6</mu1><mu2>1e5</mu2><kp>1e5</kp><kd>1</kd><maxVel>0.01</maxVel><minDepth>0.001</minDepth></gazebo>
+        <visual>
+            <origin xyz="0 0 -0.205" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="file://$(find alphabot_description)/meshes/chassy.dae" scale="1 1 1"/>
+            </geometry>
+        </visual>
 
-  <!-- ================== LIDAR (unchanged) ================== -->
-  <gazebo reference="lidar_link">
-    <sensor name="lidar" type="ray">
-      <always_on>true</always_on>
-      <update_rate>20</update_rate>
-      <visualize>true</visualize>
-      <ray>
-        <scan>
-          <horizontal>
-            <samples>720</samples>
-            <resolution>1</resolution>
-            <min_angle>-3.14159265</min_angle>
-            <max_angle>3.14159265</max_angle>
-          </horizontal>
-        </scan>
-        <range><min>0.12</min><max>20.0</max><resolution>0.01</resolution></range>
-        <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
-      </ray>
-      <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
-        <ros><remapping>~/out:=$(arg scan_topic)</remapping></ros>
-        <output_type>sensor_msgs/LaserScan</output_type>
-        <frame_name>lidar_link</frame_name>
-      </plugin>
-    </sensor>
-  </gazebo>
+        <inertial>
+            <mass value="${chassis_mass}" />
+            <xacro:box_inertia m="${chassis_mass}" x="${chassis_length}" y="${chassis_width}" z = "${chassis_height}"/>
+        </inertial>
 
-  <!-- ================== Gazebo: joint states + diff drive ================== -->
-  <gazebo>
-    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
-      <update_rate>100</update_rate>
-      <joint_name>bl_axle</joint_name>
-      <joint_name>br_axle</joint_name>
-      <joint_name>fl_axle</joint_name>
-      <joint_name>fr_axle</joint_name>
-      <joint_name>l_steer</joint_name>
-      <joint_name>r_steer</joint_name>
-    </plugin>
-  </gazebo>
+    </link>
 
-  <gazebo>
-    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
-      <ros>
-        <remapping>cmd_vel:=$(arg cmd_vel_topic)</remapping>
-        <remapping>odom:=$(arg odom_topic)</remapping>
-      </ros>
-      <update_rate>100</update_rate>
-      <left_joint>bl_axle</left_joint>
-      <right_joint>br_axle</right_joint>
-      <wheel_diameter>0.144</wheel_diameter>
-      <wheel_separation>0.488</wheel_separation>
+    <joint name="chassis_joint" type="fixed">
+        <parent link="link_base"/>
+        <child link="chassis_link"/>
+        <origin xyz="0.0 0 0" rpy="0 0 0.0" />
+    </joint>
 
-      <max_wheel_torque>1000</max_wheel_torque>
-      <max_wheel_acceleration>0.0</max_wheel_acceleration>
+    <xacro:trolley_wheel cardinality="front" dexterity="left" origin_x="${chassis_length/2}" origin_y="${trolley_track_width/2}" origin_z="-${trolley_wheel_radius+chassis_height/2}"/>
+    <xacro:trolley_wheel cardinality="front" dexterity="right" origin_x="${chassis_length/2}" origin_y="-${trolley_track_width/2}" origin_z="-${trolley_wheel_radius+chassis_height/2}"/>
 
-      <publish_odom>true</publish_odom>
-      <publish_odom_tf>true</publish_odom_tf>
-      <publish_wheel_tf>true</publish_wheel_tf>
-      <odometry_frame>odom</odometry_frame>
-      <robot_base_frame>base_footprint</robot_base_frame>
-      <odometry_source>0</odometry_source>
-    </plugin>
-  </gazebo>
+    <xacro:trolley_wheel cardinality="back" dexterity="left" origin_x="-${chassis_length/2}" origin_y="${trolley_track_width/2}" origin_z="-${trolley_wheel_radius+chassis_height/2}"/>
+    <xacro:trolley_wheel cardinality="back" dexterity="right" origin_x="-${chassis_length/2}" origin_y="-${trolley_track_width/2}" origin_z="-${trolley_wheel_radius+chassis_height/2}"/>
 
+    <xacro:traction_wheel cardinality="middle" dexterity="left" origin_x="0" origin_y="${traction_track_width/2}" origin_z="-${chassis_height/2+2*trolley_wheel_radius+eps-traction_wheel_radius}"/>
+    <xacro:traction_wheel cardinality="middle" dexterity="right" origin_x="0" origin_y="-${traction_track_width/2}" origin_z="-${chassis_height/2+2*trolley_wheel_radius+eps-traction_wheel_radius}"/>
+
+
+    <xacro:if value="$(arg two_d_lidar_enabled)">
+
+        <link name="two_d_lidar">
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <cylinder length="0.06" radius="0.075"/>
+                </geometry>
+            </collision>
+
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <cylinder length="0.06" radius="0.075"/>
+                </geometry>
+                <material name="aluminium"/>
+            </visual>
+
+            <inertial>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <mass value="0.1"/>
+                <xacro:cylinder_inertia m="0.1" r="0.075" h="0.06"/>
+            </inertial>
+        </link>
+
+        <joint name="two_d_lidar_joint" type="fixed">
+            <parent link="link_base"/>
+            <child link="two_d_lidar"/>
+            <origin xyz="0.0 0 0.08" rpy="0 0 0" />
+        </joint>
+
+        <gazebo reference="two_d_lidar">
+            <material>Gazebo/White</material>
+        </gazebo>
+
+    </xacro:if>
+
+    <link name="imu_frame"/>
+
+    <joint name="imu_joint" type="fixed">
+        <parent link="link_base"/>
+        <child link="imu_frame"/>
+        <origin xyz="0.0 0.0 0.08" rpy="0.0 0.0 0.0"/>
+    </joint>
+
+
+    <xacro:if value="$(arg camera_enabled)">
+
+
+        <link name="kinect_camera">
+
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <box size="0.07 0.3 0.09"/>
+                </geometry>
+            </collision>
+
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="file://$(find alphabot_description)/meshes/kinect/d415.dae"/>
+                </geometry>
+                <material name="black"/>
+            </visual>
+
+            <inertial>
+                <mass value="0.01"/>
+                <xacro:box_inertia m="0.01" x="0.07" y="0.3" z = "0.09"/>
+            </inertial>
+
+        </link>
+
+        <joint name="kinect_camera_joint" type="fixed">
+            <origin rpy="0 0 0" xyz="${chassis_length/2} 0 ${chassis_height/7}"/>
+            <parent link="link_base"/>
+            <child link="kinect_camera"/>
+        </joint>
+
+        <link name="kinect_camera_optical"/>
+
+        <joint name="kinect_camera_optical_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+            <parent link="kinect_camera"/>
+            <child link="kinect_camera_optical"/>
+        </joint>
+
+    </xacro:if>
+
+   
+
+
+    <link name="roof_link">
+
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${chassis_length} ${chassis_width} 0.015"/>
+            </geometry>
+        </collision>
+
+        <inertial>
+            <mass value="1"/>
+            <xacro:box_inertia m="1" x="1" y="0.6" z = "0.015"/>
+        </inertial>
+
+    </link>
+
+    <joint name="roof joint" type="fixed">
+        <parent link="chassis_link"/>
+        <child link="roof_link"/>
+        <origin xyz="0 0 0.16" rpy="0 0 0" />
+    </joint>
+    
 </robot>
