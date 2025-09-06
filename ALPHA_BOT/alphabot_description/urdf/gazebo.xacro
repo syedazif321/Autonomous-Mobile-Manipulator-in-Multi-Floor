@@ -103,7 +103,7 @@
                 </ray>
                 <plugin name="gazebo_ros_laser" filename="libgazebo_ros_ray_sensor.so">
                     <ros>
-                        <remapping>~/out:=scan</remapping>
+                        <remapping>~/out:=scan_raw</remapping>
 
                     </ros>
                     <output_type>sensor_msgs/LaserScan</output_type>

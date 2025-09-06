@@ -35,9 +35,22 @@ def generate_launch_description():
             os.path.join(pkg_nav2_dir, 'rviz', 'nav2_default_view.rviz')
         ]
     )
+    static_transform_publisher_node = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='map_to_odom',
+            output='screen',
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+        )
+    
+    
+
+
 
     ld = LaunchDescription()
     ld.add_action(nav2_launch_cmd)
     ld.add_action(rviz_node)
+    ld.add_action(static_transform_publisher_node)
+
 
     return ld

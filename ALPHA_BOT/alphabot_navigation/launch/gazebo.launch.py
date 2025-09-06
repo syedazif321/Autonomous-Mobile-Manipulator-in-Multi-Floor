@@ -30,7 +30,7 @@ def generate_launch_description():
 
     # spawing bcr_bot
     spawn_bcr_bot_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(join(bcr_bot_path, "launch", "bcr_bot_gazebo_spawn.launch.py")),
+        PythonLaunchDescriptionSource(join(bcr_bot_path, "launch", "gazebo_spawn.launch.py")),
     )
 
     return LaunchDescription([
