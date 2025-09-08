@@ -97,6 +97,18 @@ def generate_launch_description():
         )
     )
 
+    static_tf_camera_mount = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='tf_camera_mount',
+        arguments=[
+            '0', '0', '0',
+            '0',  '0',  '-1.957',
+            'world', 'realsense_rgb_frame'  
+        ]
+    )
+
+
     return LaunchDescription([
         world_arg, use_sim_time_arg, entity_arg,
         gazebo,
@@ -105,4 +117,5 @@ def generate_launch_description():
         load_jsb,
         load_arm,
         load_slider,
+        static_tf_camera_mount
     ])

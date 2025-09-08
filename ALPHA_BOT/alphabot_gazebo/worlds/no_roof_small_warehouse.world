@@ -2028,16 +2028,6 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='realsense_d435'>
-        <pose>-0.675734 17.9172 1.75021 0.397904 -0.023164 -3.12917</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>-0.675734 17.9172 1.75021 0.397904 -0.023164 -3.12917</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
       <model name='unit_box'>
         <pose>0.073948 -5.62457 2.71586 0 -0 0</pose>
         <scale>1.00775 1 1</scale>
@@ -3191,7 +3181,7 @@
         <kinematic>0</kinematic>
       </link>
       <static>1</static>
-      <pose>0.071927 -1.09724 1.31228 1.79922 -0 1.57</pose>
+      <pose>-0.675734 17.9172 1.75021 0.397904 -0.023164 -3.12917</pose>
     </model>
     <model name='rack_clone'>
       <static>1</static>
