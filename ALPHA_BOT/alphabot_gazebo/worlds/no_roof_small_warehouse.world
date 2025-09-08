@@ -6,6 +6,11 @@
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>1000</real_time_update_rate>
     </physics>
+
+    <plugin name='box_spawner_plugin' filename='libbox_spawner_plugin.so'/>
+    <plugin name="attach_detach_plugin" filename="libattach_detach.so"/>
+
+    
     <model name='aws_robomaker_warehouse_ShelfE_01_001'>
       <frame name='aws_robomaker_warehouse_ShelfE_01::__model__' attached_to='aws_robomaker_warehouse_ShelfE_01::link'>
         <pose relative_to='__model__'>0 0 0 0 -0 0</pose>
