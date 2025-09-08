@@ -13,7 +13,7 @@ from launch.actions import AppendEnvironmentVariable
 
 def generate_launch_description():
     # Get bcr_bot package's share directory path
-    bcr_bot_path = get_package_share_directory('alphabot_navigation')
+    mobile_manipulator_path = get_package_share_directory('mobile_manipulator_bringup')
     world_path = get_package_share_directory('alphabot_gazebo')
 
     # Retrieve launch configuration arguments
@@ -24,13 +24,12 @@ def generate_launch_description():
     
     # Include the Gazebo launch file
     gazebo_share = get_package_share_directory("gazebo_ros")
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(join(gazebo_share, "launch", "gazebo.launch.py"))
-    )
+    # gazebo = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(join(gazebo_share, "launch", "gazebo.launch.py"))
+    # )
 
-    # spawing bcr_bot
-    spawn_bcr_bot_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(join(bcr_bot_path, "launch", "gazebo_spawn.launch.py")),
+    spawn_mobile_manipulator = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(join(mobile_manipulator_path, "launch", "bringup_mobile_manipulator.launch.py")),
     )
 
     return LaunchDescription([
@@ -38,14 +37,14 @@ def generate_launch_description():
         
         AppendEnvironmentVariable(
         name='GAZEBO_MODEL_PATH',
-        value=join(bcr_bot_path, "models")),
+        value=join(mobile_manipulator_path, "models")),
 
         SetEnvironmentVariable(
         name='GAZEBO_RESOURCE_PATH',
-        value="/usr/share/gazebo-11:" + join(bcr_bot_path, "worlds")),
+        value="/usr/share/gazebo-11:" + join(mobile_manipulator_path, "worlds")),
         DeclareLaunchArgument('world', default_value = world_file),
         DeclareLaunchArgument('gui', default_value='true'),
         DeclareLaunchArgument('verbose', default_value='false'),
         DeclareLaunchArgument('use_sim_time', default_value = use_sim_time),
-        gazebo,spawn_bcr_bot_node
+        spawn_mobile_manipulator
     ])
