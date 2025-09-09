@@ -42,10 +42,13 @@ public:
           max_sample_points_(declare_parameter("max_sample_points", 4000)),
           camera_frame_(declare_parameter("camera_frame", "realsense_rgb_frame")),
           base_frame_(declare_parameter("base_frame", "base_link")),
-          roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),    // ← NEW
-          pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),  // ← NEW
-          yaw_offset_deg_(declare_parameter("yaw_offset_deg", 180.0)),      // ← NEW
+          // >>>>>>>>>>>>>>>>>>>> ADD RPY OFFSET PARAMETERS <<<<<<<<<<<<<<<<<<<<<
+          roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),
+          pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),
+          yaw_offset_deg_(declare_parameter("yaw_offset_deg", 0.0)),
+          // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           detection_active_(false),
+          has_detected_(false),
           cycle_id_(0)
     {
         // Publishers
@@ -77,6 +80,8 @@ public:
                 }
                 cycle_id_++;
                 detection_active_ = true;
+                has_detected_ = false;
+                frozen_pose_.reset();
                 sync_->registerCallback(std::bind(&BoxDetector::imageCb, this, std::placeholders::_1, std::placeholders::_2));
                 resp->success = true;
                 resp->message = "Detection started.";
@@ -102,6 +107,10 @@ public:
             });
 
         RCLCPP_INFO(get_logger(), "BoxDetector ready. Call /start_detection to begin.");
+        RCLCPP_INFO(get_logger(), "Tune TF orientation live with:");
+        RCLCPP_INFO(get_logger(), "  ros2 param set /box_detector_node roll_offset_deg  VALUE");
+        RCLCPP_INFO(get_logger(), "  ros2 param set /box_detector_node pitch_offset_deg VALUE");
+        RCLCPP_INFO(get_logger(), "  ros2 param set /box_detector_node yaw_offset_deg   VALUE");
     }
 
 private:
@@ -141,6 +150,64 @@ private:
                  const sensor_msgs::msg::Image::ConstSharedPtr& depth_msg)
     {
         if (!detection_active_.load()) return;
+
+        // >>>>>>>>>>>>>>>>>>>> IF ALREADY DETECTED, JUST RE-BROADCAST TF WITH OFFSET <<<<<<<<<<<<<<<<<<<<
+        if (has_detected_.load() && frozen_pose_) {
+            geometry_msgs::msg::TransformStamped tf_msg;
+            tf_msg.header.stamp = this->now();
+            tf_msg.header.frame_id = base_frame_;
+            tf_msg.child_frame_id = "detected_box";
+
+            // Copy position (unchanged)
+            tf_msg.transform.translation.x = frozen_pose_->pose.position.x;
+            tf_msg.transform.translation.y = frozen_pose_->pose.position.y;
+            tf_msg.transform.translation.z = frozen_pose_->pose.position.z;
+
+            // Apply RPY offset to orientation
+            tf2::Quaternion q_orig;
+            tf2::fromMsg(frozen_pose_->pose.orientation, q_orig);
+
+            double roll_rad = roll_offset_deg_ * M_PI / 180.0;
+            double pitch_rad = pitch_offset_deg_ * M_PI / 180.0;
+            double yaw_rad = yaw_offset_deg_ * M_PI / 180.0;
+
+            tf2::Quaternion q_offset;
+            q_offset.setRPY(roll_rad, pitch_rad, yaw_rad);
+
+            tf2::Quaternion q_final = q_orig * q_offset;
+            q_final.normalize();
+
+            tf_msg.transform.rotation = tf2::toMsg(q_final);
+
+            tf_broadcaster_->sendTransform(tf_msg);
+
+            // Optional: republish pose with new orientation
+            auto republished_pose = *frozen_pose_;
+            republished_pose.header.stamp = tf_msg.header.stamp;
+            republished_pose.pose.orientation = tf_msg.transform.rotation;
+            pose_pub_->publish(republished_pose);
+
+            // Display images
+            cv::Mat rgb, depth32;
+            try {
+                rgb = cv_bridge::toCvCopy(rgb_msg, "bgr8")->image;
+                depth32 = cv_bridge::toCvCopy(depth_msg, "32FC1")->image;
+            } catch (...) {
+                return;
+            }
+
+            cv::imshow("Detection", rgb);
+            if (!depth32.empty()) {
+                cv::Mat depth_vis;
+                depth32.convertTo(depth_vis, CV_8UC1, 255.0 / 5.0);
+                cv::applyColorMap(depth_vis, depth_vis, cv::COLORMAP_JET);
+                cv::imshow("Depth View", depth_vis);
+            }
+            cv::waitKey(1);
+
+            return;
+        }
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         cv::Mat rgb, depth32;
         try {
@@ -385,37 +452,18 @@ private:
                                   e0[2], e1[2], e2[2]);
             }
 
-            // >>>>>>>>>>>>>>>>>>>> APPLY RPY OFFSET <<<<<<<<<<<<<<<<<<<<
-            // Convert current R to RPY
-            tf2::Quaternion q_current;
-            R.getRotation(q_current);
+            tf2::Quaternion q;
+            R.getRotation(q);
+            q.normalize();
 
-            // Create offset rotation from parameters
-            double roll_rad = roll_offset_deg_ * M_PI / 180.0;
-            double pitch_rad = pitch_offset_deg_ * M_PI / 180.0;
-            double yaw_rad = yaw_offset_deg_ * M_PI / 180.0;
-
-            tf2::Quaternion q_offset;
-            q_offset.setRPY(roll_rad, pitch_rad, yaw_rad);
-
-            // Combine: final = current * offset
-            tf2::Quaternion q_final = q_current * q_offset;
-            q_final.normalize();
-
-            // Get back rotation matrix (optional, if you need it later)
-            tf2::Matrix3x3 R_final(q_final);
-            // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-            // Create pose
             geometry_msgs::msg::PoseStamped pose;
             pose.header = rgb_msg->header;
             pose.header.frame_id = base_frame_;
             pose.pose.position.x = C[0];
             pose.pose.position.y = C[1];
             pose.pose.position.z = C[2];
-            pose.pose.orientation = tf2::toMsg(q_final);  // ← Use final quaternion
+            pose.pose.orientation = tf2::toMsg(q);
 
-            // Get color
             std::string color = "unknown";
             cv::Rect roi = cv::boundingRect(cnt);
             cv::Scalar mean_hsv = cv::mean(hsv(roi), mask(roi));
@@ -425,13 +473,14 @@ private:
                 color = "blue";
             }
 
-            // Build info string
             double roll, pitch, yaw;
-            tf2::Matrix3x3(q_final).getRPY(roll, pitch, yaw);
+            tf2::Matrix3x3(tf2::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y,
+                                           pose.pose.orientation.z, pose.pose.orientation.w))
+                .getRPY(roll, pitch, yaw);
 
             std::ostringstream oss;
             oss << std::fixed << std::setprecision(3)
-                << "Box Detected (Facing Camera):\n"
+                << "Box Detected (RAW):\n"
                 << "  Color: " << color << "\n"
                 << "  Size (L x W): " << L << "m x " << W << "m\n"
                 << "  Estimated Thickness: " << thickness << "m\n"
@@ -440,10 +489,6 @@ private:
                 << roll * 180 / M_PI << ", "
                 << pitch * 180 / M_PI << ", "
                 << yaw * 180 / M_PI << " [deg]\n"
-                << "  Applied RPY Offset: "
-                << roll_offset_deg_ << ", "
-                << pitch_offset_deg_ << ", "
-                << yaw_offset_deg_ << " [deg]\n"
                 << "  Area (pixels): " << area_px << "\n"
                 << "  Distance: " << std::sqrt(C[0]*C[0] + C[1]*C[1] + C[2]*C[2]) << " [m]\n"
                 << "  Timestamp: " << rgb_msg->header.stamp.sec << "."
@@ -459,7 +504,7 @@ private:
             cv::polylines(rgb, {cnt}, true, cv::Scalar(0, 255, 0), 2);
         }
 
-        // >>>>>>>>>>>>>>>>>>>> CONTINUOUS PUBLISHING <<<<<<<<<<<<<<<<<<<<
+        // >>>>>>>>>>>>>>>>>>>> FREEZE ON FIRST DETECTION <<<<<<<<<<<<<<<<<<<<
         if (best_pose && best_info_str) {
             pose_pub_->publish(*best_pose);
 
@@ -467,9 +512,15 @@ private:
             info_msg.data = *best_info_str;
             info_pub_->publish(info_msg);
 
-            RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "\n" << *best_info_str); // 1Hz log
+            RCLCPP_INFO_STREAM(get_logger(), "\n" << *best_info_str);
 
-            // Broadcast TF continuously
+            {
+                std::lock_guard<std::mutex> lk(mutex_);
+                frozen_pose_ = std::make_shared<geometry_msgs::msg::PoseStamped>(*best_pose);
+                has_detected_ = true;
+            }
+
+            // Broadcast initial TF (without offset)
             geometry_msgs::msg::TransformStamped tf_msg;
             tf_msg.header = best_pose->header;
             tf_msg.child_frame_id = "detected_box";
@@ -478,6 +529,8 @@ private:
             tf_msg.transform.translation.z = best_pose->pose.position.z;
             tf_msg.transform.rotation = best_pose->pose.orientation;
             tf_broadcaster_->sendTransform(tf_msg);
+
+            RCLCPP_INFO(get_logger(), "✅ Box pose detected and frozen. Tune orientation with roll/pitch/yaw_offset_deg parameters.");
         }
         // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -501,9 +554,9 @@ private:
     std::string camera_frame_;
     std::string base_frame_;
 
-    double roll_offset_deg_;   // ← NEW: Control orientation via RPY
-    double pitch_offset_deg_; // ← NEW
-    double yaw_offset_deg_;   // ← NEW
+    double roll_offset_deg_;
+    double pitch_offset_deg_;
+    double yaw_offset_deg_;
 
     std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>> rgb_sub_, depth_sub_;
     std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
@@ -516,6 +569,8 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_srv_, stop_srv_;
 
     std::atomic<bool> detection_active_;
+    std::atomic<bool> has_detected_;
+    std::shared_ptr<geometry_msgs::msg::PoseStamped> frozen_pose_;
     uint64_t cycle_id_;
     std::mutex mutex_;
 };
