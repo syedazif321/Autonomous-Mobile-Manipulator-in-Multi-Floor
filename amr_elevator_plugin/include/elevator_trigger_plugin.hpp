@@ -1,38 +1,32 @@
-#ifndef ELEVATOR_TRIGGER_PLUGIN_HPP
-#define ELEVATOR_TRIGGER_PLUGIN_HPP
+#ifndef AMR_ELEVATOR_TRIGGER_PLUGIN_HPP
+#define AMR_ELEVATOR_TRIGGER_PLUGIN_HPP
 
-#include <gazebo/common/Plugin.hh>
+#include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <gazebo/common/Events.hh>
+#include <gazebo/common/common.hh>
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/set_bool.hpp>
-#include <memory>
 
 namespace gazebo
 {
-  class ElevatorTriggerPlugin : public ModelPlugin
+  class AmrElevatorTriggerPlugin : public ModelPlugin
   {
   public:
-    ElevatorTriggerPlugin() = default;
-    virtual ~ElevatorTriggerPlugin() = default;
-
     void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) override;
-
-  private:
     void OnUpdate();
+  
+  private:
     void callElevatorService(bool state);
 
     physics::ModelPtr model;
-    event::ConnectionPtr updateConnection;
-
-    std::shared_ptr<rclcpp::Node> ros_node;
+    rclcpp::Node::SharedPtr ros_node;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr elevator_client;
 
-    // Target poses
+    event::ConnectionPtr updateConnection;
+
     ignition::math::Vector3d target_pose_enter;
     ignition::math::Vector3d target_pose_exit;
-
-    double tolerance;
+    double tolerance = 0.5;
 
     bool enter_called = false;
     bool exit_called = false;

@@ -3,23 +3,23 @@
 
 namespace gazebo
 {
-  void ElevatorTriggerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
+  void AmrElevatorTriggerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   {
     model = _model;
 
-    // ROS2 node init
+    gzlog << "[AmrElevatorTriggerPlugin] Successfully loaded!" << std::endl;
+    
+    gzlog << "[AmrElevatorTriggerPlugin] Model Name: " << _model->GetName() << std::endl;
+
     if (!rclcpp::ok())
     {
       rclcpp::init(0, nullptr);
     }
-    ros_node = std::make_shared<rclcpp::Node>("elevator_trigger_plugin");
+    
+
+    ros_node = std::make_shared<rclcpp::Node>("amr_elevator_trigger_plugin");
     elevator_client = ros_node->create_client<std_srvs::srv::SetBool>("/elevator_cmd");
-      gzlog << "[ElevatorTriggerPlugin] Successfully loaded!" << std::endl;
 
-    // If attached to a specific robot
-    gzlog << "[ElevatorTriggerPlugin] Model Name: " << _model->GetName() << std::endl;
-
-    // Load parameters from SDF
     if (_sdf->HasElement("target_pose_enter"))
     {
       auto elem = _sdf->GetElement("target_pose_enter");
@@ -30,7 +30,7 @@ namespace gazebo
     }
     else
     {
-      gzerr << "[ElevatorTriggerPlugin] Missing <target_pose_enter> in SDF.\n";
+      gzerr << "[AmrElevatorTriggerPlugin] Missing <target_pose_enter> in SDF.\n";
       return;
     }
 
@@ -44,25 +44,22 @@ namespace gazebo
     }
     else
     {
-      gzerr << "[ElevatorTriggerPlugin] Missing <target_pose_exit> in SDF.\n";
+      gzerr << "[AmrElevatorTriggerPlugin] Missing <target_pose_exit> in SDF.\n";
       return;
     }
 
     tolerance = _sdf->HasElement("tolerance") ? _sdf->Get<double>("tolerance") : 0.5;
 
     updateConnection = event::Events::ConnectWorldUpdateBegin(
-      std::bind(&ElevatorTriggerPlugin::OnUpdate, this));
-
-    gzlog << "[ElevatorTriggerPlugin] Plugin loaded successfully.\n";
+      std::bind(&AmrElevatorTriggerPlugin::OnUpdate, this));
   }
 
-  void ElevatorTriggerPlugin::OnUpdate()
+  void AmrElevatorTriggerPlugin::OnUpdate()
   {
     if (!ros_node) return;
 
     auto pose = model->WorldPose().Pos();
 
-    // Check for enter position
     if (!enter_called && pose.Distance(target_pose_enter) <= tolerance)
     {
       RCLCPP_INFO(ros_node->get_logger(), "Robot reached ENTER target. Calling elevator open service...");
@@ -70,7 +67,6 @@ namespace gazebo
       enter_called = true;
     }
 
-    // Check for exit position
     if (!exit_called && pose.Distance(target_pose_exit) <= tolerance)
     {
       RCLCPP_INFO(ros_node->get_logger(), "Robot reached EXIT target. Calling elevator close service...");
@@ -81,7 +77,7 @@ namespace gazebo
     rclcpp::spin_some(ros_node);
   }
 
-  void ElevatorTriggerPlugin::callElevatorService(bool state)
+  void AmrElevatorTriggerPlugin::callElevatorService(bool state)
   {
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
     request->data = state;
@@ -104,5 +100,6 @@ namespace gazebo
     }
   }
 
-  GZ_REGISTER_MODEL_PLUGIN(ElevatorTriggerPlugin)
+  // REGISTER the plugin
+  GZ_REGISTER_MODEL_PLUGIN(AmrElevatorTriggerPlugin)
 }

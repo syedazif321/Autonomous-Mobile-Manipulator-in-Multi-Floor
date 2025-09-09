@@ -11,7 +11,6 @@ def generate_launch_description():
     pkg_bcr = get_package_share_directory('alphabot_navigation')
     pkg_rviz = get_package_share_directory('alphabot_bringup')
 
-    # Declare launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='True')
     autostart = LaunchConfiguration('autostart', default='True')
 
@@ -26,8 +25,6 @@ def generate_launch_description():
         default_value='true',
         description='Automatically start the slam_toolbox stack'
     )
-
-    # Include slam_toolbox launch file
     slam_toolbox_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_slam_toolbox_dir, 'launch', 'online_async_launch.py')
@@ -38,7 +35,6 @@ def generate_launch_description():
         }.items()
     )
 
-    # Launch RViz
     rviz_launch_cmd = Node(
         package="rviz2",
         executable="rviz2",
@@ -48,7 +44,6 @@ def generate_launch_description():
         ]
     )
 
-    # Static transform publisher
     static_transform_publisher_node = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -56,8 +51,17 @@ def generate_launch_description():
         output='screen',
         arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
     )
+    scan_filter_node = Node(
+        package='alphabot_navigation',   
+        executable='scan_filter_node.py', 
+        name='scan_filter_node',            
+        output='screen',                    
+        emulate_tty=True   
+    )
 
-    # Create launch description and add actions
+
+
+
     ld = LaunchDescription()
 
     ld.add_action(declare_use_sim_time)
@@ -65,6 +69,8 @@ def generate_launch_description():
     ld.add_action(slam_toolbox_launch_cmd)
     ld.add_action(rviz_launch_cmd)
     ld.add_action(static_transform_publisher_node)
+    ld.add_action(scan_filter_node)
+
 
     return ld
 

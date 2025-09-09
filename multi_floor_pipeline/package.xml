@@ -1,18 +1,21 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>parol6_pose_saver</name>
+  <name>multi_floor_pipeline</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="syedazif321@gmail.com">azif</maintainer>
+  <maintainer email="azif@example.com">Mohammed Azif</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>moveit_msgs</depend>
-  <depend>yaml-cpp</depend>
+  <depend>behaviortree_cpp_v3</depend>
+  <depend>nav2_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>control_msgs</depend>
+  <depend>msg_gazebo</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

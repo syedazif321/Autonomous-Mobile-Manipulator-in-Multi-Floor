@@ -107,26 +107,26 @@ def generate_launch_description():
     )
 
     # --- Static TFs ---
-    static_tf_camera_mount = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='tf_camera_mount',
-        arguments=['-0.675734', '17.9172', '1.75021', '0', '0', '-1.957', 'world', 'realsense_rgb_frame']
-    )
-    static_tf_map_to_odom = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='map_to_odom',
-        output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'world', 'odom']
-    )
-    static_tf_world_to_map = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='world_to_map',
-        output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'world', 'map']
-    )
+    # static_tf_camera_mount = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='tf_camera_mount',
+    #     arguments=['-0.675734', '17.9172', '1.75021', '0', '0', '-1.957', 'world', 'realsense_rgb_frame']
+    # )
+    # static_tf_map_to_odom = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='map_to_odom',
+    #     output='screen',
+    #     arguments=['0', '0', '0', '0', '0', '0', 'world', 'odom']
+    # )
+    # static_tf_world_to_map = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='world_to_map',
+    #     output='screen',
+    #     arguments=['0', '0', '0', '0', '0', '0', 'world', 'map']
+    # )
 
     # --- Vision node ---
     vision_node = Node(
@@ -159,9 +159,9 @@ def generate_launch_description():
         load_jsb,
         load_arm,
         load_slider,
-        static_tf_camera_mount,
-        static_tf_map_to_odom,
-        static_tf_world_to_map,
+        # static_tf_camera_mount,
+        # static_tf_map_to_odom,
+        # static_tf_world_to_map,
         vision_node,
         pick_controller_node
     ])

@@ -13,22 +13,18 @@ include_directories(
   ${rclcpp_INCLUDE_DIRS}
 )
 
-add_library(elevator_trigger_plugin SHARED
+add_library(amr_elevator_trigger_plugin SHARED
   src/elevator_trigger_plugin.cpp
 )
 
-ament_target_dependencies(elevator_trigger_plugin
+ament_target_dependencies(amr_elevator_trigger_plugin
   rclcpp
   std_srvs
 )
 
-target_link_libraries(elevator_trigger_plugin
-  ${GAZEBO_LIBRARIES}
+install(TARGETS amr_elevator_trigger_plugin
+  DESTINATION lib
 )
 
-install(
-  TARGETS elevator_trigger_plugin
-  LIBRARY DESTINATION lib
-)
 
 ament_package()

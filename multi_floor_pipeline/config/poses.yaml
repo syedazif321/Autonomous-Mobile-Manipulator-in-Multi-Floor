@@ -1,0 +1,17 @@
+poses:
+  start:
+    x: 1.0
+    y: 2.0
+    theta: 0.0
+  lift_pre:
+    x: 5.0
+    y: 3.0
+    theta: 1.57
+  pick_pre:
+    x: 2.0
+    y: 4.0
+    theta: 0.0
+  drop_pre:
+    x: 7.0
+    y: 8.0
+    theta: -1.57

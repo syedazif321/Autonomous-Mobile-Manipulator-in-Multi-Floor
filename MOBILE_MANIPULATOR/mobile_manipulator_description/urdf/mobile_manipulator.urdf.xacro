@@ -35,22 +35,20 @@
 
 
       <gazebo>
-        <plugin name="elevator_trigger_plugin" filename="libelevator_trigger_plugin.so">
-        <!-- Elevator entry position -->
+        <plugin name="amr_elevator_trigger_plugin" filename="libamr_elevator_trigger_plugin.so">
+
         <target_pose_enter>
-            <x>2.0</x>
-            <y>1.5</y>
-            <z>0.0</z>
+            <x>-3.498</x>
+            <y>0.017</y>
+            <z>0.534</z>
         </target_pose_enter>
 
-        <!-- Elevator exit position -->
         <target_pose_exit>
             <x>5.0</x>
             <y>1.5</y>
             <z>0.0</z>
         </target_pose_exit>
 
-        <!-- Distance tolerance in meters -->
         <tolerance>0.5</tolerance>
         </plugin>
     </gazebo>
