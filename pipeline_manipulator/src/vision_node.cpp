@@ -1,6 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <std_msgs/msg/string.hpp>  // Added for info publishing
+#include <std_msgs/msg/string.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <message_filters/subscriber.h>
@@ -9,7 +9,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <tf2/LinearMath/Transform.h>
-#include <tf2/LinearMath/Matrix3x3.h>  // Added for rotation matrix
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -36,19 +36,21 @@ public:
           cy_(declare_parameter("cy", 240.5)),
           min_area_px_(declare_parameter("min_area_px", 500.0)),
           square_tolerance_(declare_parameter("square_tolerance", 0.12)),
-          up_normal_cos_thresh_(declare_parameter("up_normal_cos_thresh", 0.90)),
+          camera_normal_cos_thresh_(declare_parameter("camera_normal_cos_thresh", 0.3)),
           plane_inlier_thresh_(declare_parameter("plane_inlier_thresh", 0.006)),
           ransac_iters_(declare_parameter("ransac_iters", 120)),
           max_sample_points_(declare_parameter("max_sample_points", 4000)),
           camera_frame_(declare_parameter("camera_frame", "realsense_rgb_frame")),
           base_frame_(declare_parameter("base_frame", "base_link")),
+          roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),    // ← NEW
+          pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),  // ← NEW
+          yaw_offset_deg_(declare_parameter("yaw_offset_deg", 180.0)),      // ← NEW
           detection_active_(false),
-          has_published_(false),
           cycle_id_(0)
     {
         // Publishers
         pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("/detected_box_pose", 10);
-        info_pub_ = create_publisher<std_msgs::msg::String>("/detected_box_info", 10);  // Optional info
+        info_pub_ = create_publisher<std_msgs::msg::String>("/detected_box_info", 10);
 
         // Subscribers
         rgb_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(this, "/camera/image_raw");
@@ -73,17 +75,12 @@ public:
                     resp->message = "Detection already running.";
                     return;
                 }
-                // Reset per-cycle state
-                has_published_ = false;
                 cycle_id_++;
                 detection_active_ = true;
-
-                // Re-register callback (in case it was unregistered)
                 sync_->registerCallback(std::bind(&BoxDetector::imageCb, this, std::placeholders::_1, std::placeholders::_2));
-
                 resp->success = true;
                 resp->message = "Detection started.";
-                RCLCPP_INFO(get_logger(), "Detection started (cycle %lu). State reset: has_published_=false", static_cast<unsigned long>(cycle_id_));
+                RCLCPP_INFO(get_logger(), "Detection started (cycle %lu).", static_cast<unsigned long>(cycle_id_));
             });
 
         stop_srv_ = create_service<std_srvs::srv::Trigger>(
@@ -97,11 +94,8 @@ public:
                     return;
                 }
                 detection_active_ = false;
-
-                // Recreate synchronizer to drop queued messages
                 sync_.reset();
                 sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(SyncPolicy(10), *rgb_sub_, *depth_sub_);
-
                 resp->success = true;
                 resp->message = "Detection stopped.";
                 RCLCPP_INFO(get_logger(), "Detection stopped (cycle %lu).", static_cast<unsigned long>(cycle_id_));
@@ -115,8 +109,8 @@ private:
         sensor_msgs::msg::Image, sensor_msgs::msg::Image>;
 
     struct PlaneModel {
-        cv::Vec3f n;   // unit normal
-        float d;       // plane: n·x + d = 0
+        cv::Vec3f n;
+        float d;
     };
 
     static bool planeFrom3(const cv::Vec3f& a, const cv::Vec3f& b, const cv::Vec3f& c, PlaneModel& out)
@@ -148,8 +142,6 @@ private:
     {
         if (!detection_active_.load()) return;
 
-        RCLCPP_DEBUG(get_logger(), "Received image pair.");
-
         cv::Mat rgb, depth32;
         try {
             rgb = cv_bridge::toCvCopy(rgb_msg, "bgr8")->image;
@@ -164,30 +156,22 @@ private:
             return;
         }
 
-        // Create mask
         cv::Mat hsv, mask;
         cv::cvtColor(rgb, hsv, cv::COLOR_BGR2HSV);
         mask = createBoxMask(hsv);
 
-        // Morphology
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5,5));
         cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
         cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 
-        // Find contours
         std::vector<std::vector<cv::Point>> contours;
         cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         if (contours.empty()) {
-            if (has_published_.load()) {
-                RCLCPP_INFO(get_logger(), "Box no longer visible (cycle %lu). Ready to publish again.", static_cast<unsigned long>(cycle_id_));
-                has_published_ = false;
-            }
             RCLCPP_DEBUG(get_logger(), "No contours found.");
             return;
         }
 
-        // Lookup transform once
         geometry_msgs::msg::TransformStamped T_cb;
         try {
             T_cb = tf_buffer_->lookupTransform(base_frame_, camera_frame_, rclcpp::Time(0), tf2::durationFromSec(0.1));
@@ -198,10 +182,12 @@ private:
         tf2::Transform tf_cb;
         tf2::fromMsg(T_cb.transform, tf_cb);
 
-        // RNG for RANSAC
+        tf2::Vector3 cam_dir_in_cam(0, 0, 1);
+        tf2::Vector3 cam_dir_in_base = tf_cb * cam_dir_in_cam;
+        cam_dir_in_base.normalize();
+
         static thread_local std::mt19937 rng{std::random_device{}()};
 
-        // Track best candidate
         std::optional<geometry_msgs::msg::PoseStamped> best_pose;
         std::optional<std::string> best_info_str;
         double best_dist = 1e9;
@@ -245,7 +231,6 @@ private:
 
             if (pts_base.size() < 400) continue;
 
-            // RANSAC Plane Fitting
             PlaneModel best_plane;
             size_t best_inliers = 0;
             std::vector<int> best_idxs;
@@ -258,9 +243,9 @@ private:
                 PlaneModel pl;
                 if (!planeFrom3(pts_base[i1], pts_base[i2], pts_base[i3], pl)) continue;
 
-                cv::Vec3f z_axis(0.f, 0.f, 1.f);
-                float cos_up = std::fabs(pl.n.dot(z_axis));
-                if (cos_up < static_cast<float>(up_normal_cos_thresh_)) continue;
+                tf2::Vector3 n_vec(pl.n[0], pl.n[1], pl.n[2]);
+                double cos_cam = n_vec.dot(cam_dir_in_base);
+                if (cos_cam < camera_normal_cos_thresh_) continue;
 
                 std::vector<int> inliers;
                 inliers.reserve(pts_base.size());
@@ -278,12 +263,10 @@ private:
 
             if (best_inliers < 200) continue;
 
-            // Extract inliers
             std::vector<cv::Vec3f> inliers3;
             inliers3.reserve(best_idxs.size());
             for (int idx : best_idxs) inliers3.push_back(pts_base[idx]);
 
-            // PCA for orientation
             cv::Mat data(static_cast<int>(inliers3.size()), 3, CV_32F);
             for (size_t i = 0; i < inliers3.size(); ++i) {
                 data.at<float>(static_cast<int>(i), 0) = inliers3[i][0];
@@ -297,16 +280,21 @@ private:
                 return (n > 1e-9f) ? v * (1.f / n) : v;
             };
 
-            cv::Vec3f e2 = nrm(pca.eigenvectors.row(2));
-            if (e2[2] > 0) e2 = -e2;  // Ensure Z points down (toward ground)
-
             cv::Vec3f e0p = nrm(pca.eigenvectors.row(0));
+            cv::Vec3f e1p = nrm(pca.eigenvectors.row(1));
+            cv::Vec3f e2 = nrm(pca.eigenvectors.row(2));
+
+            tf2::Vector3 e2_tf(e2[0], e2[1], e2[2]);
+            double dot_cam = e2_tf.dot(cam_dir_in_base);
+            if (dot_cam > 0) {
+                e2 = -e2;
+            }
+
             e0p = nrm(e0p - e2 * (e0p.dot(e2)));
-            cv::Vec3f e1p = nrm(e2.cross(e0p));
+            e1p = nrm(e2.cross(e0p));
 
             cv::Vec3f C = pca.mean;
 
-            // Project points to plane
             std::vector<cv::Point2f> uv;
             uv.reserve(inliers3.size());
             for (const auto& P : inliers3) {
@@ -314,7 +302,6 @@ private:
                 uv.emplace_back(d.dot(e0p), d.dot(e1p));
             }
 
-            // Convex hull & approx poly
             std::vector<int> hull_idx;
             cv::convexHull(uv, hull_idx, true, false);
             std::vector<cv::Point2f> hull;
@@ -328,13 +315,12 @@ private:
             cv::approxPolyDP(hull, poly, 0.02 * peri, true);
             if (poly.size() != 4) continue;
 
-            // Check for right angles
             auto angle_ok = [](const cv::Point2f& a, const cv::Point2f& b, const cv::Point2f& c) {
                 cv::Point2f v1 = a - b, v2 = c - b;
                 double n1 = std::hypot(v1.x, v1.y), n2 = std::hypot(v2.x, v2.y);
                 if (n1 < 1e-6 || n2 < 1e-6) return false;
                 double cosang = std::fabs(v1.x * v2.x + v1.y * v2.y) / (n1 * n2);
-                return cosang < 0.20; // ~80-100 degrees
+                return cosang < 0.20;
             };
 
             bool right = angle_ok(poly[3], poly[0], poly[1]) &&
@@ -343,7 +329,6 @@ private:
                          angle_ok(poly[2], poly[3], poly[0]);
             if (!right) continue;
 
-            // Check square tolerance
             auto seglen = [](const cv::Point2f& a, const cv::Point2f& b) {
                 return std::hypot(a.x - b.x, a.y - b.y);
             };
@@ -357,8 +342,7 @@ private:
             if (max_side < 1e-6) continue;
             if (std::fabs(L - W) / max_side > square_tolerance_) continue;
 
-            // Estimate height (optional)
-            float height = 0.0f;
+            float thickness = 0.0f;
             if (!pxs_valid.empty()) {
                 std::vector<float> z_vals;
                 z_vals.reserve(pxs_valid.size());
@@ -368,14 +352,12 @@ private:
                 }
                 if (!z_vals.empty()) {
                     std::sort(z_vals.begin(), z_vals.end());
-                    float z_bottom = z_vals.front();
-                    tf2::Vector3 z_bottom_vec(0, 0, z_bottom);
-                    float z_world = (tf_cb * z_bottom_vec).z();
-                    height = std::max(0.0f, z_world - C[2]);
+                    float z_front = z_vals.front();
+                    float z_back = z_vals.back();
+                    thickness = std::max(0.0f, z_back - z_front);
                 }
             }
 
-            // Align X to longer side
             cv::Point2f e_uv;
             if (L >= W) {
                 e_uv = poly[1] - poly[0];
@@ -390,30 +372,39 @@ private:
             cv::Vec3f e0 = nrm(e0p * static_cast<float>(e_uv.x) + e1p * static_cast<float>(e_uv.y));
             cv::Vec3f e1 = nrm(e2.cross(e0));
 
-            // Flip to avoid negative X/Y (heuristic)
-            tf2::Vector3 e0_tf(e0[0], e0[1], e0[2]);
-            if (e0_tf.x() < -0.1) {
-                e0 = -e0; e1 = -e1;
-            } else if (std::abs(e0_tf.x()) < 0.2 && e0_tf.y() < -0.1) {
-                e0 = -e0; e1 = -e1;
-            }
-
-            // Build rotation matrix
             tf2::Matrix3x3 R(
                 e0[0], e1[0], e2[0],
                 e0[1], e1[1], e2[1],
                 e0[2], e1[2], e2[2]
             );
+
             if (R.determinant() < 0) {
                 e1 = -e1;
                 R = tf2::Matrix3x3(e0[0], e1[0], e2[0],
-                                   e0[1], e1[1], e2[1],
-                                   e0[2], e1[2], e2[2]);
+                                  e0[1], e1[1], e2[1],
+                                  e0[2], e1[2], e2[2]);
             }
 
-            tf2::Quaternion q;
-            R.getRotation(q);
-            q.normalize();
+            // >>>>>>>>>>>>>>>>>>>> APPLY RPY OFFSET <<<<<<<<<<<<<<<<<<<<
+            // Convert current R to RPY
+            tf2::Quaternion q_current;
+            R.getRotation(q_current);
+
+            // Create offset rotation from parameters
+            double roll_rad = roll_offset_deg_ * M_PI / 180.0;
+            double pitch_rad = pitch_offset_deg_ * M_PI / 180.0;
+            double yaw_rad = yaw_offset_deg_ * M_PI / 180.0;
+
+            tf2::Quaternion q_offset;
+            q_offset.setRPY(roll_rad, pitch_rad, yaw_rad);
+
+            // Combine: final = current * offset
+            tf2::Quaternion q_final = q_current * q_offset;
+            q_final.normalize();
+
+            // Get back rotation matrix (optional, if you need it later)
+            tf2::Matrix3x3 R_final(q_final);
+            // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
             // Create pose
             geometry_msgs::msg::PoseStamped pose;
@@ -422,7 +413,7 @@ private:
             pose.pose.position.x = C[0];
             pose.pose.position.y = C[1];
             pose.pose.position.z = C[2];
-            pose.pose.orientation = tf2::toMsg(q);
+            pose.pose.orientation = tf2::toMsg(q_final);  // ← Use final quaternion
 
             // Get color
             std::string color = "unknown";
@@ -436,20 +427,23 @@ private:
 
             // Build info string
             double roll, pitch, yaw;
-            tf2::Matrix3x3(tf2::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y,
-                                           pose.pose.orientation.z, pose.pose.orientation.w))
-                .getRPY(roll, pitch, yaw);
+            tf2::Matrix3x3(q_final).getRPY(roll, pitch, yaw);
 
             std::ostringstream oss;
             oss << std::fixed << std::setprecision(3)
-                << "Box Detected:\n"
+                << "Box Detected (Facing Camera):\n"
                 << "  Color: " << color << "\n"
                 << "  Size (L x W): " << L << "m x " << W << "m\n"
+                << "  Estimated Thickness: " << thickness << "m\n"
                 << "  Position (X, Y, Z): " << C[0] << ", " << C[1] << ", " << C[2] << " [m]\n"
                 << "  Orientation (R, P, Y): "
                 << roll * 180 / M_PI << ", "
                 << pitch * 180 / M_PI << ", "
                 << yaw * 180 / M_PI << " [deg]\n"
+                << "  Applied RPY Offset: "
+                << roll_offset_deg_ << ", "
+                << pitch_offset_deg_ << ", "
+                << yaw_offset_deg_ << " [deg]\n"
                 << "  Area (pixels): " << area_px << "\n"
                 << "  Distance: " << std::sqrt(C[0]*C[0] + C[1]*C[1] + C[2]*C[2]) << " [m]\n"
                 << "  Timestamp: " << rgb_msg->header.stamp.sec << "."
@@ -462,47 +456,35 @@ private:
                 best_info_str = oss.str();
             }
 
-            // Draw contour
             cv::polylines(rgb, {cnt}, true, cv::Scalar(0, 255, 0), 2);
         }
 
-        // Publish if found and not already published in this cycle
+        // >>>>>>>>>>>>>>>>>>>> CONTINUOUS PUBLISHING <<<<<<<<<<<<<<<<<<<<
         if (best_pose && best_info_str) {
-            if (!has_published_.load()) {
-                pose_pub_->publish(*best_pose);
+            pose_pub_->publish(*best_pose);
 
-                auto info_msg = std_msgs::msg::String();
-                info_msg.data = *best_info_str;
-                info_pub_->publish(info_msg);
+            auto info_msg = std_msgs::msg::String();
+            info_msg.data = *best_info_str;
+            info_pub_->publish(info_msg);
 
-                RCLCPP_INFO_STREAM(get_logger(), "\n" << *best_info_str);
+            RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "\n" << *best_info_str); // 1Hz log
 
-                // Broadcast TF
-                geometry_msgs::msg::TransformStamped tf_msg;
-                tf_msg.header = best_pose->header;
-                tf_msg.child_frame_id = "detected_box";
-                tf_msg.transform.translation.x = best_pose->pose.position.x;
-                tf_msg.transform.translation.y = best_pose->pose.position.y;
-                tf_msg.transform.translation.z = best_pose->pose.position.z;
-                tf_msg.transform.rotation = best_pose->pose.orientation;
-                tf_broadcaster_->sendTransform(tf_msg);
-
-                has_published_ = true;
-                RCLCPP_INFO(get_logger(), "Published detection once (cycle %lu). Waiting for box to disappear or next cycle.",
-                            static_cast<unsigned long>(cycle_id_));
-            }
-        } else {
-            if (has_published_.load()) {
-                RCLCPP_INFO(get_logger(), "Box no longer visible (cycle %lu). Ready to publish again.", static_cast<unsigned long>(cycle_id_));
-                has_published_ = false;
-            }
+            // Broadcast TF continuously
+            geometry_msgs::msg::TransformStamped tf_msg;
+            tf_msg.header = best_pose->header;
+            tf_msg.child_frame_id = "detected_box";
+            tf_msg.transform.translation.x = best_pose->pose.position.x;
+            tf_msg.transform.translation.y = best_pose->pose.position.y;
+            tf_msg.transform.translation.z = best_pose->pose.position.z;
+            tf_msg.transform.rotation = best_pose->pose.orientation;
+            tf_broadcaster_->sendTransform(tf_msg);
         }
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-        // Display for debugging
         cv::imshow("Detection", rgb);
         if (!depth32.empty()) {
             cv::Mat depth_vis;
-            depth32.convertTo(depth_vis, CV_8UC1, 255.0 / 5.0); // Scale for 5m max
+            depth32.convertTo(depth_vis, CV_8UC1, 255.0 / 5.0);
             cv::applyColorMap(depth_vis, depth_vis, cv::COLORMAP_JET);
             cv::imshow("Depth View", depth_vis);
         }
@@ -512,12 +494,16 @@ private:
     double fx_, fy_, cx_, cy_;
     double min_area_px_;
     double square_tolerance_;
-    double up_normal_cos_thresh_;
+    double camera_normal_cos_thresh_;
     double plane_inlier_thresh_;
     int ransac_iters_;
     int max_sample_points_;
     std::string camera_frame_;
     std::string base_frame_;
+
+    double roll_offset_deg_;   // ← NEW: Control orientation via RPY
+    double pitch_offset_deg_; // ← NEW
+    double yaw_offset_deg_;   // ← NEW
 
     std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>> rgb_sub_, depth_sub_;
     std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
@@ -526,13 +512,12 @@ private:
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr info_pub_;  // Optional
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr info_pub_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_srv_, stop_srv_;
 
     std::atomic<bool> detection_active_;
-    std::atomic<bool> has_published_;
-    std::mutex mutex_;
     uint64_t cycle_id_;
+    std::mutex mutex_;
 };
 
 int main(int argc, char** argv)
