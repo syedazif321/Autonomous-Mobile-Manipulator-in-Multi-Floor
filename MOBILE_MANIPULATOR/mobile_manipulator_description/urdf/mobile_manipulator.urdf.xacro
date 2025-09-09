@@ -20,7 +20,7 @@
   <joint name="slider_to_arm_base" type="fixed">
     <parent link="slider"/>        
     <child  link="base_link"/>     
-    <origin xyz="0 -0.33 0.06" rpy="0 0 0"/>
+    <origin xyz="0 -0.33 0.06" rpy="0 0 -1.57"/>
   </joint>
 
 
@@ -32,6 +32,28 @@
       <parameters>$(find mobile_manipulator_control)/config/controllers.yaml</parameters>
     </plugin>
   </gazebo>
+
+
+      <gazebo>
+        <plugin name="elevator_trigger_plugin" filename="libelevator_trigger_plugin.so">
+        <!-- Elevator entry position -->
+        <target_pose_enter>
+            <x>2.0</x>
+            <y>1.5</y>
+            <z>0.0</z>
+        </target_pose_enter>
+
+        <!-- Elevator exit position -->
+        <target_pose_exit>
+            <x>5.0</x>
+            <y>1.5</y>
+            <z>0.0</z>
+        </target_pose_exit>
+
+        <!-- Distance tolerance in meters -->
+        <tolerance>0.5</tolerance>
+        </plugin>
+    </gazebo>
 
   <!-- <xacro:include filename="$(find mobile_manipulator_description)/urdf/camera_module.urdf.xacro"/>
   

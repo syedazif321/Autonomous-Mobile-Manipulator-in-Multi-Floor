@@ -36,8 +36,8 @@ private:
 
   std::default_random_engine gen_;
 
-  double x = -0.76116;
-  double y = 18.76585; 
+  double x =-0.443003;
+  double y = 18.55; 
   double yaw = 0.0;
    
   
@@ -60,7 +60,7 @@ private:
     double inertia_val = (1.0 / 6.0) * mass_ * size * size;
 
 
-    double z = 1.321734 + size / 2.0;
+    double z = 1.521734 + size / 2.0;
     
 
     int id = color_counter_[color]++;
