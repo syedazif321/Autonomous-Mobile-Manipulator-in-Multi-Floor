@@ -45,13 +45,13 @@ PickController::PickController(const rclcpp::NodeOptions & options)
                         latest_pose_.pose.position.z,
                         latest_pose_.header.frame_id.c_str());
 
-            if(move_to_pose(latest_pose_)) {
+            if(move_to_pose_cartesian(latest_pose_)) {  // ← CHANGED FUNCTION NAME
                 response->success = true;
                 response->message = "Picking completed successfully!";
                 RCLCPP_INFO(logger_, "✅ Picking succeeded.");
             } else {
                 response->success = false;
-                response->message = "Failed to plan or execute motion!";
+                response->message = "Failed to plan or execute Cartesian motion!";
                 RCLCPP_ERROR(logger_, "❌ Picking failed.");
             }
         });
@@ -75,32 +75,44 @@ void PickController::initialize_move_group()
     }
 }
 
-bool PickController::move_to_pose(const geometry_msgs::msg::PoseStamped& pose_msg)
+// ✅ REPLACED FUNCTION: Uses Cartesian path planning
+bool PickController::move_to_pose_cartesian(const geometry_msgs::msg::PoseStamped& pose_msg)
 {
     if(!move_group_) {
         RCLCPP_ERROR(logger_, "❌ MoveGroupInterface not initialized!");
         return false;
     }
 
+    // Set reference frame
     move_group_->setPoseReferenceFrame(pose_msg.header.frame_id);
-    move_group_->setPoseTarget(pose_msg.pose);
 
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    auto plan_success = move_group_->plan(plan);
+    // Get current pose
+    geometry_msgs::msg::Pose start_pose = move_group_->getCurrentPose().pose;
 
-    if(plan_success != moveit::core::MoveItErrorCode::SUCCESS) {
-        RCLCPP_ERROR(logger_, "❌ Planning failed!");
+    // Define waypoints: start → target
+    std::vector<geometry_msgs::msg::Pose> waypoints;
+    waypoints.push_back(start_pose);         // Start from current
+    waypoints.push_back(pose_msg.pose);      // Go to target
+
+    // Plan Cartesian path
+    moveit_msgs::msg::RobotTrajectory trajectory;
+    double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 0.0, trajectory); // eef_step = 1cm, jump_threshold = 0.0
+
+    if(fraction < 0.95) { // Require at least 95% of path to be planned
+        RCLCPP_ERROR(logger_, "❌ Cartesian path planning failed! Only %.0f%% achieved.", fraction * 100.0);
         return false;
     }
 
-    RCLCPP_INFO(logger_, "✅ Planning succeeded. Executing...");
-    auto exec_result = move_group_->execute(plan);
+    RCLCPP_INFO(logger_, "✅ Cartesian path planned (fraction: %.0f%%). Executing...", fraction * 100.0);
+
+    // Execute
+    auto exec_result = move_group_->execute(trajectory);
 
     if(exec_result == moveit::core::MoveItErrorCode::SUCCESS) {
-        RCLCPP_INFO(logger_, "✅ Motion executed successfully.");
+        RCLCPP_INFO(logger_, "✅ Cartesian motion executed successfully.");
         return true;
     } else {
-        RCLCPP_ERROR(logger_, "❌ Execution failed! Error code: %d", exec_result.val);
+        RCLCPP_ERROR(logger_, "❌ Cartesian execution failed! Error code: %d", exec_result.val);
         return false;
     }
 }
@@ -114,4 +126,4 @@ int main(int argc, char * argv[])
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
-} 
+}
