@@ -30,36 +30,35 @@ class BoxDetector : public rclcpp::Node
 public:
     BoxDetector()
         : Node("box_detector_node"),
-          fx_(declare_parameter("fx", 554.3827)),
-          fy_(declare_parameter("fy", 554.3827)),
-          cx_(declare_parameter("cx", 320.5)),
-          cy_(declare_parameter("cy", 240.5)),
-          min_area_px_(declare_parameter("min_area_px", 500.0)),
-          square_tolerance_(declare_parameter("square_tolerance", 0.12)),
-          camera_normal_cos_thresh_(declare_parameter("camera_normal_cos_thresh", 0.3)),
-          plane_inlier_thresh_(declare_parameter("plane_inlier_thresh", 0.006)),
-          ransac_iters_(declare_parameter("ransac_iters", 120)),
-          max_sample_points_(declare_parameter("max_sample_points", 4000)),
-          camera_frame_(declare_parameter("camera_frame", "realsense_rgb_frame")),
-          base_frame_(declare_parameter("base_frame", "base_link")),
+        fx_(declare_parameter("fx", 554.3827)),
+        fy_(declare_parameter("fy", 554.3827)),
+        cx_(declare_parameter("cx", 320.5)),
+        cy_(declare_parameter("cy", 240.5)),
+        min_area_px_(declare_parameter("min_area_px", 500.0)),
+        square_tolerance_(declare_parameter("square_tolerance", 0.12)),
+        camera_normal_cos_thresh_(declare_parameter("camera_normal_cos_thresh", 0.3)),
+        plane_inlier_thresh_(declare_parameter("plane_inlier_thresh", 0.006)),
+        ransac_iters_(declare_parameter("ransac_iters", 120)),
+        max_sample_points_(declare_parameter("max_sample_points", 4000)),
+        camera_frame_(declare_parameter("camera_frame", "camera_rgb_optical_frame")),
+        base_frame_(declare_parameter("base_frame", "base_link")),
           // >>>>>>>>>>>>>>>>>>>> ADD RPY OFFSET PARAMETERS <<<<<<<<<<<<<<<<<<<<<
-          roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),
-          pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),
-          yaw_offset_deg_(declare_parameter("yaw_offset_deg", 0.0)),
+        roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),
+        pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),
+        yaw_offset_deg_(declare_parameter("yaw_offset_deg", 0.0)),
           // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          detection_active_(false),
-          has_detected_(false),
-          cycle_id_(0)
+        detection_active_(false),
+        has_detected_(false),
+        cycle_id_(0)
     {
         // Publishers
         pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("/detected_box_pose", 10);
         info_pub_ = create_publisher<std_msgs::msg::String>("/detected_box_info", 10);
 
-        // Subscribers
-        rgb_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(this, "/camera/image_raw");
-        depth_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(this, "/camera/depth/image_raw");
+        rgb_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(this, "/camera_rgb/rgb_camera/image_raw");
 
-        // TF
+        depth_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(this, "/camera_depth/depth_camera/depth/image_raw");
+
         tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -149,21 +148,23 @@ private:
     void imageCb(const sensor_msgs::msg::Image::ConstSharedPtr& rgb_msg,
                  const sensor_msgs::msg::Image::ConstSharedPtr& depth_msg)
     {
+        // >>>>>>>>>>>>>>>>>>>> DEBUG: LOG INCOMING ENCODINGS <<<<<<<<<<<<<<<<<<<<<
+        RCLCPP_DEBUG(get_logger(), "RGB encoding: %s | Depth encoding: %s",
+                     rgb_msg->encoding.c_str(), depth_msg->encoding.c_str());
+
         if (!detection_active_.load()) return;
 
-        // >>>>>>>>>>>>>>>>>>>> IF ALREADY DETECTED, JUST RE-BROADCAST TF WITH OFFSET <<<<<<<<<<<<<<<<<<<<
+        // If already detected, just re-broadcast TF
         if (has_detected_.load() && frozen_pose_) {
             geometry_msgs::msg::TransformStamped tf_msg;
             tf_msg.header.stamp = this->now();
             tf_msg.header.frame_id = base_frame_;
             tf_msg.child_frame_id = "detected_box";
 
-            // Copy position (unchanged)
             tf_msg.transform.translation.x = frozen_pose_->pose.position.x;
             tf_msg.transform.translation.y = frozen_pose_->pose.position.y;
             tf_msg.transform.translation.z = frozen_pose_->pose.position.z;
 
-            // Apply RPY offset to orientation
             tf2::Quaternion q_orig;
             tf2::fromMsg(frozen_pose_->pose.orientation, q_orig);
 
@@ -181,18 +182,18 @@ private:
 
             tf_broadcaster_->sendTransform(tf_msg);
 
-            // Optional: republish pose with new orientation
             auto republished_pose = *frozen_pose_;
             republished_pose.header.stamp = tf_msg.header.stamp;
             republished_pose.pose.orientation = tf_msg.transform.rotation;
             pose_pub_->publish(republished_pose);
 
-            // Display images
+            // Convert images SAFELY
             cv::Mat rgb, depth32;
             try {
-                rgb = cv_bridge::toCvCopy(rgb_msg, "bgr8")->image;
-                depth32 = cv_bridge::toCvCopy(depth_msg, "32FC1")->image;
-            } catch (...) {
+                rgb = cv_bridge::toCvCopy(rgb_msg, sensor_msgs::image_encodings::BGR8)->image;
+                depth32 = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1)->image;
+            } catch (const cv_bridge::Exception& e) {
+                RCLCPP_ERROR(get_logger(), "❌ CV_BRIDGE ERROR in FROZEN branch: %s", e.what());
                 return;
             }
 
@@ -204,17 +205,16 @@ private:
                 cv::imshow("Depth View", depth_vis);
             }
             cv::waitKey(1);
-
             return;
         }
-        // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+        // Convert images SAFELY — MAIN DETECTION BRANCH
         cv::Mat rgb, depth32;
         try {
-            rgb = cv_bridge::toCvCopy(rgb_msg, "bgr8")->image;
-            depth32 = cv_bridge::toCvCopy(depth_msg, "32FC1")->image;
+            rgb = cv_bridge::toCvCopy(rgb_msg, sensor_msgs::image_encodings::BGR8)->image;
+            depth32 = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1)->image;
         } catch (const cv_bridge::Exception& e) {
-            RCLCPP_ERROR(get_logger(), "cv_bridge error: %s", e.what());
+            RCLCPP_ERROR(get_logger(), "❌ CV_BRIDGE ERROR in MAIN branch: %s", e.what());
             return;
         }
 
@@ -504,7 +504,6 @@ private:
             cv::polylines(rgb, {cnt}, true, cv::Scalar(0, 255, 0), 2);
         }
 
-        // >>>>>>>>>>>>>>>>>>>> FREEZE ON FIRST DETECTION <<<<<<<<<<<<<<<<<<<<
         if (best_pose && best_info_str) {
             pose_pub_->publish(*best_pose);
 
@@ -520,7 +519,6 @@ private:
                 has_detected_ = true;
             }
 
-            // Broadcast initial TF (without offset)
             geometry_msgs::msg::TransformStamped tf_msg;
             tf_msg.header = best_pose->header;
             tf_msg.child_frame_id = "detected_box";
@@ -532,7 +530,6 @@ private:
 
             RCLCPP_INFO(get_logger(), "✅ Box pose detected and frozen. Tune orientation with roll/pitch/yaw_offset_deg parameters.");
         }
-        // >>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         cv::imshow("Detection", rgb);
         if (!depth32.empty()) {

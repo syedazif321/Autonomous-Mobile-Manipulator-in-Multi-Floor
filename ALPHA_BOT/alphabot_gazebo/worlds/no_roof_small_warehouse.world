@@ -3067,7 +3067,7 @@
         <topic>~/elevator</topic>
       </plugin>
     </model>
-    <model name='realsense_d435'>
+    <!-- <model name='realsense_d435'>
       <link name='link'>
         <inertial>
           <mass>0.0615752</mass>
@@ -3157,7 +3157,7 @@
       </link>
       <static>1</static>
       <pose>-0.675734 17.9172 1.75021 0.397904 -0.023164 -3.12917</pose>
-    </model>
+    </model> -->
     <model name='rack_clone'>
       <static>1</static>
       <link name='link'>
