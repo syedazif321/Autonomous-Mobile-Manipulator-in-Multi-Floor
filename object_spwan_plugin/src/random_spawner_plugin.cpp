@@ -10,7 +10,7 @@
 
 namespace gazebo
 {
-  class RandomSpawnerPlugin : public WorldPlugin
+  class FixedSpawnerPlugin : public WorldPlugin
   {
   public:
     void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf) override
@@ -18,118 +18,101 @@ namespace gazebo
       world_ = _world;
       node_ = gazebo_ros::Node::Get(_sdf);
 
-      // Get model list from <model> tags in SDF
-      if (_sdf->HasElement("model"))
-      {
-        sdf::ElementPtr elem = _sdf->GetElement("model");
-        while (elem)
-        {
-          models_.push_back(elem->Get<std::string>());
-          elem = elem->GetNextElement("model");
-        }
-      }
-
-      if (models_.empty())
-      {
-        RCLCPP_WARN(node_->get_logger(), "No models provided, using default box/sphere");
-        models_ = {"model://box", "model://sphere"};
-      }
-
-      // Random generators
       rng_.seed(std::random_device{}());
-      dist_x_ = std::uniform_real_distribution<double>(-3.0, 3.0);
-      dist_y_ = std::uniform_real_distribution<double>(-3.0, 3.0);
-      dist_t_ = std::uniform_int_distribution<int>(3, 8);   // seconds between spawns
-      dist_n_ = std::uniform_int_distribution<int>(1, 3);   // how many models per spawn
-
       update_connection_ = event::Events::ConnectWorldUpdateBegin(
-        std::bind(&RandomSpawnerPlugin::OnUpdate, this));
+          std::bind(&FixedSpawnerPlugin::OnUpdate, this));
+
+      // Define models and their two poses
+      models_ = {
+        {"aws_robomaker_warehouse_TrashCanC_01", 
+         {{6.686410, 5.400180, 0, 0, 0, 0},
+          {-4.237031, 10.930869, 0, 0, 0, 0}}},
+        {"aws_robomaker_warehouse_ClutteringA_01", 
+         {{-4.948304, 3.357823, -0.017477, 0, 0, -1.583191},
+          {6.686410, 5.400180, 0, 0, 0, 0}}}
+      };
 
       last_spawn_time_ = world_->SimTime();
+      spawn_interval_ = 5.0;  // seconds
     }
 
   private:
+    struct Pose6D {
+      double x, y, z, roll, pitch, yaw;
+    };
+
+    struct ModelData {
+      std::string name;
+      std::vector<Pose6D> poses;
+      int current_pose_index = 0;
+      bool spawned = false;
+    };
+
     void OnUpdate()
     {
       auto sim_time = world_->SimTime();
+      double elapsed = (sim_time - last_spawn_time_).Double();
 
-      if ((sim_time - last_spawn_time_).Double() > next_spawn_interval_)
+      if (elapsed >= spawn_interval_)
       {
-        int num_to_spawn = dist_n_(rng_);
-        for (int i = 0; i < num_to_spawn; i++)
-          SpawnRandomModel();
+        for (auto &model : models_)
+        {
+          // Remove existing model if spawned
+          if (model.spawned)
+          {
+            world_->RemoveModel(model.name);
+            model.spawned = false;
+          }
+
+          // Choose the next pose
+          Pose6D &p = model.poses[model.current_pose_index];
+          SpawnModel(model.name, p);
+
+          // Toggle to the other pose for next spawn
+          model.current_pose_index = 1 - model.current_pose_index;
+        }
 
         last_spawn_time_ = sim_time;
-        next_spawn_interval_ = dist_t_(rng_);
-      }
-
-      // Remove expired models
-      for (auto it = spawned_.begin(); it != spawned_.end(); )
-      {
-        if ((sim_time - it->spawn_time).Double() > it->lifetime)
-        {
-          world_->RemoveModel(it->name);
-          it = spawned_.erase(it);
-        }
-        else
-          ++it;
       }
     }
 
-    void SpawnRandomModel()
+    void SpawnModel(const std::string &model_name, const Pose6D &pose)
     {
-      // Pick random model
-      std::string model = models_[rng_() % models_.size()];
-      ignition::math::Pose3d pose(dist_x_(rng_), dist_y_(rng_), 0.1, 0, 0, 0);
-
-      // Unique name
-      std::string name = "rand_model_" + std::to_string(counter_++);
-
       sdf::SDF modelSDF;
+      std::string model_uri = "model://" + model_name;
+
       modelSDF.SetFromString(
         "<sdf version='1.6'>\
-          <model name='" + name + "'>\
-            <include>\
-              <uri>" + model + "</uri>\
-            </include>\
-            <pose>" + std::to_string(pose.Pos().X()) + " " +
-                        std::to_string(pose.Pos().Y()) + " " +
-                        std::to_string(pose.Pos().Z()) + " 0 0 0</pose>\
-          </model>\
-        </sdf>");
+           <model name='" + model_name + "'>\
+             <include>\
+               <uri>" + model_uri + "</uri>\
+             </include>\
+             <pose>" + std::to_string(pose.x) + " " +
+                         std::to_string(pose.y) + " " +
+                         std::to_string(pose.z) + " " +
+                         std::to_string(pose.roll) + " " +
+                         std::to_string(pose.pitch) + " " +
+                         std::to_string(pose.yaw) + "</pose>\
+           </model>\
+         </sdf>"
+      );
 
       world_->InsertModelSDF(modelSDF);
 
-      // Store with lifetime
-      Spawned s;
-      s.name = name;
-      s.spawn_time = world_->SimTime();
-      s.lifetime = 5 + (rng_() % 5); // 5–10 sec lifetime
-      spawned_.push_back(s);
+      // Mark as spawned
+      for (auto &m : models_)
+        if (m.name == model_name) m.spawned = true;
     }
-
-    struct Spawned
-    {
-      std::string name;
-      common::Time spawn_time;
-      double lifetime;
-    };
 
     physics::WorldPtr world_;
     gazebo_ros::Node::SharedPtr node_;
     event::ConnectionPtr update_connection_;
-
-    std::vector<std::string> models_;
-    std::vector<Spawned> spawned_;
-
     std::mt19937 rng_;
-    std::uniform_real_distribution<double> dist_x_, dist_y_;
-    std::uniform_int_distribution<int> dist_t_, dist_n_;
 
+    std::vector<ModelData> models_;
     common::Time last_spawn_time_;
-    int next_spawn_interval_ = 5;
-    int counter_ = 0;
+    double spawn_interval_;
   };
 
-  GZ_REGISTER_WORLD_PLUGIN(RandomSpawnerPlugin)
+  GZ_REGISTER_WORLD_PLUGIN(FixedSpawnerPlugin)
 }

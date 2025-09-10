@@ -7,7 +7,7 @@
     <!-- Camera main link -->
     <link name="camera_link">
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
         <geometry>
           <!-- <box size="0.3 0.3 0.05"/>  -->
           <mesh filename="$(find mobile_manipulator_description)/meshes/kkk.stl" scale="1 1 1"/>
