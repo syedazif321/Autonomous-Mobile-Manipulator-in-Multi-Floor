@@ -321,3 +321,16 @@ velocity_smoother:
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
 
+
+lifecycle_manager:
+  ros__parameters:
+    autostart: true
+    node_names:
+      - map_server
+      - amcl
+      - controller_server
+      - planner_server
+      - global_costmap
+      - local_costmap
+
+

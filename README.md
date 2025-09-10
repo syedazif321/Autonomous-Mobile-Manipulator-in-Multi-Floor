@@ -37,3 +37,9 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/ama
 
 
 ros2 launch rm_75_config moveit_bringup.launch.py
+
+
+ros2 topic pub /floor_number std_msgs/msg/Int32 "{data: 1}"
+
+
+ros2 run alphabot_navigation map_switcher
