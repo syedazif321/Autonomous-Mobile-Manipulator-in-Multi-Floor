@@ -17,7 +17,7 @@ public:
 private:
     void pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
     void initialize_move_group();
-    bool move_to_pose_cartesian(const geometry_msgs::msg::PoseStamped& pose_msg);
+    bool move_to_pose(const geometry_msgs::msg::PoseStamped& pose_msg);
 
     rclcpp::Logger logger_;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;

@@ -11,7 +11,6 @@ PickController::PickController(const rclcpp::NodeOptions & options)
   move_group_initialized_(false)
 {
     RCLCPP_INFO(logger_, "PickController started. Waiting for /detected_box_pose and /start_picking trigger.");
-
     pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
         "/detected_box_pose", 10,
         std::bind(&PickController::pose_callback, this, std::placeholders::_1));
@@ -45,14 +44,15 @@ PickController::PickController(const rclcpp::NodeOptions & options)
                         latest_pose_.pose.position.z,
                         latest_pose_.header.frame_id.c_str());
 
-            if(move_to_pose_cartesian(latest_pose_)) {  // ← CHANGED FUNCTION NAME
+
+            if(move_to_pose(latest_pose_)) {
                 response->success = true;
                 response->message = "Picking completed successfully!";
-                RCLCPP_INFO(logger_, "✅ Picking succeeded.");
+                RCLCPP_INFO(logger_, " Picking succeeded.");
             } else {
                 response->success = false;
-                response->message = "Failed to plan or execute Cartesian motion!";
-                RCLCPP_ERROR(logger_, "❌ Picking failed.");
+                response->message = "Failed to plan or execute motion!";
+                RCLCPP_ERROR(logger_, " Picking failed.");
             }
         });
 }
@@ -61,58 +61,52 @@ void PickController::pose_callback(const geometry_msgs::msg::PoseStamped::Shared
 {
     latest_pose_ = *msg;
     received_pose_ = true;
-    RCLCPP_INFO_ONCE(logger_, "📦 Received first box pose in frame '%s'", msg->header.frame_id.c_str());
+    RCLCPP_INFO_ONCE(logger_, " Received first box pose in frame '%s'", msg->header.frame_id.c_str());
 }
 
 void PickController::initialize_move_group()
 {
     try {
         move_group_ = std::make_unique<moveit::planning_interface::MoveGroupInterface>(shared_from_this(), "rm_group");
-        RCLCPP_INFO(logger_, "🤖 MoveGroupInterface initialized for group 'rm_group'");
+        RCLCPP_INFO(logger_, " MoveGroupInterface initialized for group 'rm_group'");
     } catch(const std::exception& e) {
-        RCLCPP_ERROR(logger_, "❌ Failed to initialize MoveGroupInterface: %s", e.what());
+        RCLCPP_ERROR(logger_, " Failed to initialize MoveGroupInterface: %s", e.what());
         move_group_.reset();
     }
 }
 
-// ✅ REPLACED FUNCTION: Uses Cartesian path planning
-bool PickController::move_to_pose_cartesian(const geometry_msgs::msg::PoseStamped& pose_msg)
+
+bool PickController::move_to_pose(const geometry_msgs::msg::PoseStamped& pose_msg)
 {
     if(!move_group_) {
-        RCLCPP_ERROR(logger_, "❌ MoveGroupInterface not initialized!");
+        RCLCPP_ERROR(logger_, " MoveGroupInterface not initialized!");
         return false;
     }
 
-    // Set reference frame
+
     move_group_->setPoseReferenceFrame(pose_msg.header.frame_id);
 
-    // Get current pose
-    geometry_msgs::msg::Pose start_pose = move_group_->getCurrentPose().pose;
 
-    // Define waypoints: start → target
-    std::vector<geometry_msgs::msg::Pose> waypoints;
-    waypoints.push_back(start_pose);         // Start from current
-    waypoints.push_back(pose_msg.pose);      // Go to target
+    move_group_->setPoseTarget(pose_msg.pose);
 
-    // Plan Cartesian path
-    moveit_msgs::msg::RobotTrajectory trajectory;
-    double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 0.0, trajectory); // eef_step = 1cm, jump_threshold = 0.0
+  
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    bool success = (move_group_->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS);
 
-    if(fraction < 0.95) { // Require at least 95% of path to be planned
-        RCLCPP_ERROR(logger_, "❌ Cartesian path planning failed! Only %.0f%% achieved.", fraction * 100.0);
+    if (!success) {
+        RCLCPP_ERROR(logger_, " Motion planning failed!");
         return false;
     }
-
-    RCLCPP_INFO(logger_, "✅ Cartesian path planned (fraction: %.0f%%). Executing...", fraction * 100.0);
+    RCLCPP_INFO(logger_, " Motion plan found. Executing...");
 
     // Execute
-    auto exec_result = move_group_->execute(trajectory);
+    auto exec_result = move_group_->execute(plan);
 
-    if(exec_result == moveit::core::MoveItErrorCode::SUCCESS) {
-        RCLCPP_INFO(logger_, "✅ Cartesian motion executed successfully.");
+    if (exec_result == moveit::core::MoveItErrorCode::SUCCESS) {
+        RCLCPP_INFO(logger_, " Motion executed successfully.");
         return true;
     } else {
-        RCLCPP_ERROR(logger_, "❌ Cartesian execution failed! Error code: %d", exec_result.val);
+        RCLCPP_ERROR(logger_, " Motion execution failed! Error code: %d", exec_result.val);
         return false;
     }
 }

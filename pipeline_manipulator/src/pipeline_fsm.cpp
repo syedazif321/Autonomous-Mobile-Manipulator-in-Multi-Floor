@@ -18,7 +18,7 @@ PipelineFSM::PipelineFSM()
     // Initialize service clients
     spawn_box_client_ = this->create_client<std_srvs::srv::Trigger>("/spawn_box");
     start_picking_client_ = this->create_client<std_srvs::srv::Trigger>("/start_picking");
-    start_detection_client_ = this->create_client<std_srvs::srv::Trigger>("/start_detection"); // 👈 NEW
+    start_detection_client_ = this->create_client<std_srvs::srv::Trigger>("/start_detection");
     attach_detach_client_ = this->create_client<msg_gazebo::srv::AttachDetach>("/AttachDetach");
     elevator_client_ = this->create_client<std_srvs::srv::SetBool>("/elevator_cmd");
 
@@ -41,7 +41,7 @@ PipelineFSM::PipelineFSM()
     while (!start_picking_client_->wait_for_service(1s) && rclcpp::ok()) {
         RCLCPP_INFO(this->get_logger(), "Waiting for /start_picking service...");
     }
-    while (!start_detection_client_->wait_for_service(1s) && rclcpp::ok()) { // 👈 NEW
+    while (!start_detection_client_->wait_for_service(1s) && rclcpp::ok()) {
         RCLCPP_INFO(this->get_logger(), "Waiting for /start_detection service...");
     }
     while (!attach_detach_client_->wait_for_service(1s) && rclcpp::ok()) {
@@ -210,36 +210,78 @@ void PipelineFSM::sendSliderTrajectory()
 void PipelineFSM::callTriggerService(const std::string& service_name)
 {
     auto client = (service_name == "/spawn_box") ? spawn_box_client_ : start_picking_client_;
+    if (!client || !client->service_is_ready()) {
+        RCLCPP_ERROR(this->get_logger(), "❌ Service %s is not ready!", service_name.c_str());
+        return;
+    }
+
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
 
     client->async_send_request(request,
         [this, service_name](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
             auto response = future.get();
             if (response->success) {
-                RCLCPP_INFO(this->get_logger(), "%s succeeded", service_name.c_str());
+                RCLCPP_INFO(this->get_logger(), "✅ %s succeeded", service_name.c_str());
             } else {
-                RCLCPP_ERROR(this->get_logger(), "%s failed: %s", service_name.c_str(), response->message.c_str());
+                RCLCPP_ERROR(this->get_logger(), "❌ %s failed: %s", service_name.c_str(), response->message.c_str());
             }
         });
+
+    RCLCPP_INFO(this->get_logger(), "📤 Triggered service: %s", service_name.c_str());
 }
 
-void PipelineFSM::callStartDetection()  // 👈 NEW FUNCTION
+void PipelineFSM::callStartDetection()
 {
+    if (!start_detection_client_ || !start_detection_client_->service_is_ready()) {
+        RCLCPP_ERROR(this->get_logger(), "❌ /start_detection service is NOT ready!");
+        return;
+    }
+
+    RCLCPP_INFO(this->get_logger(), "📤 Calling /start_detection service...");
+
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
 
     start_detection_client_->async_send_request(request,
         [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
             auto response = future.get();
             if (response->success) {
-                RCLCPP_INFO(this->get_logger(), "✅ Vision detection STARTED");
+                RCLCPP_INFO(this->get_logger(), "✅ Vision detection STARTED successfully");
             } else {
-                RCLCPP_ERROR(this->get_logger(), "❌ Failed to start vision detection: %s", response->message.c_str());
+                RCLCPP_ERROR(this->get_logger(), "❌ Vision detection failed: %s", response->message.c_str());
+            }
+        });
+}
+
+void PipelineFSM::callStartPicking()
+{
+    if (!start_picking_client_ || !start_picking_client_->service_is_ready()) {
+        RCLCPP_ERROR(this->get_logger(), "❌ /start_picking service is NOT ready!");
+        return;
+    }
+
+    RCLCPP_INFO(this->get_logger(), "📤 Calling /start_picking service...");
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    start_picking_client_->async_send_request(request,
+        [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+            auto response = future.get();
+            if (response->success) {
+                RCLCPP_INFO(this->get_logger(), "✅ /start_picking succeeded — transitioning to ATTACH_OBJECT");
+                this->transitionTo(State::ATTACH_OBJECT);
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "❌ /start_picking failed: %s", response->message.c_str());
             }
         });
 }
 
 void PipelineFSM::callAttachDetach(bool attach)
 {
+    if (!attach_detach_client_ || !attach_detach_client_->service_is_ready()) {
+        RCLCPP_ERROR(this->get_logger(), "❌ /AttachDetach service is NOT ready!");
+        return;
+    }
+
     auto request = std::make_shared<msg_gazebo::srv::AttachDetach::Request>();
     request->model1 = "mobile_manipulator";
     request->link1 = "Link7";
@@ -256,10 +298,17 @@ void PipelineFSM::callAttachDetach(bool attach)
                 RCLCPP_ERROR(this->get_logger(), "❌ Attach/Detach failed");
             }
         });
+
+    RCLCPP_INFO(this->get_logger(), "📤 Sent %s request to /AttachDetach", attach ? "ATTACH" : "DETACH");
 }
 
 void PipelineFSM::callSetBoolService(const std::string& service_name, bool data)
 {
+    if (!elevator_client_ || !elevator_client_->service_is_ready()) {
+        RCLCPP_ERROR(this->get_logger(), "❌ %s service is NOT ready!", service_name.c_str());
+        return;
+    }
+
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
     request->data = data;
 
@@ -272,6 +321,8 @@ void PipelineFSM::callSetBoolService(const std::string& service_name, bool data)
                 RCLCPP_ERROR(this->get_logger(), "❌ %s failed: %s", service_name.c_str(), response->message.c_str());
             }
         });
+
+    RCLCPP_INFO(this->get_logger(), "📤 Setting %s to %s", service_name.c_str(), data ? "true" : "false");
 }
 
 void PipelineFSM::publishBoolTopic(const std::string& topic_name, bool data)
@@ -284,6 +335,12 @@ void PipelineFSM::publishBoolTopic(const std::string& topic_name, bool data)
 
 void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
 {
+    // 👇 PREVENT RE-SENDING WHILE GOAL IS ACTIVE
+    if (arm_goal_active_) {
+        RCLCPP_WARN(this->get_logger(), "Arm goal already active — skipping send for '%s'", joint_target_name.c_str());
+        return;
+    }
+
     RCLCPP_INFO(this->get_logger(), "🔧 ENTERED sendArmTrajectory for: %s", joint_target_name.c_str());
 
     if (!targets_json_["arm_positions"].contains(joint_target_name)) {
@@ -312,6 +369,7 @@ void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
         [this, joint_target_name](const rclcpp_action::ClientGoalHandle<control_msgs::action::FollowJointTrajectory>::SharedPtr & goal_handle) {
             if (!goal_handle) {
                 RCLCPP_ERROR(this->get_logger(), "❌ Arm goal '%s' REJECTED", joint_target_name.c_str());
+                this->arm_goal_active_ = false;
             } else {
                 RCLCPP_INFO(this->get_logger(), "✅ Arm goal '%s' ACCEPTED", joint_target_name.c_str());
             }
@@ -319,11 +377,13 @@ void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
 
     send_goal_options.result_callback =
         [this, joint_target_name](const rclcpp_action::ClientGoalHandle<control_msgs::action::FollowJointTrajectory>::WrappedResult & result) {
+            this->arm_goal_active_ = false;  // 👈 Clear flag on result
+
             if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
                 RCLCPP_INFO(this->get_logger(), "🎉 Arm movement to '%s' SUCCEEDED", joint_target_name.c_str());
                 switch (this->current_state_) {
                     case State::MOVE_ARM_SAFE_PICK:
-                        this->transitionTo(State::START_PICKING_1);
+                        this->transitionTo(State::START_VISION);
                         break;
                     case State::MOVE_ARM_HOME:
                         this->transitionTo(State::NAV_TO_MIDDLE);
@@ -347,28 +407,31 @@ void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
 
     RCLCPP_INFO(this->get_logger(), "📤 Sending arm trajectory goal to server...");
 
-    // Check if action server is still available
     if (!arm_client_->action_server_is_ready()) {
         RCLCPP_ERROR(this->get_logger(), "❌ Arm action server is NOT ready!");
         return;
     }
 
     arm_client_->async_send_goal(goal_msg, send_goal_options);
-    RCLCPP_INFO(this->get_logger(), "✅ Arm goal sent successfully.");
+    arm_goal_active_ = true;  // 👈 Set flag
+    RCLCPP_INFO(this->get_logger(), "✅ Arm goal sent successfully for '%s'", joint_target_name.c_str());
 }
 
+// ✅ CORRECTLY SCOPED transitionTo()
 void PipelineFSM::transitionTo(State next)
 {
     RCLCPP_INFO(this->get_logger(), "🔄 TRANSITION: %d → %d", static_cast<int>(current_state_), static_cast<int>(next));
     current_state_ = next;
     
-    // Restart FSM timer to ensure next state is processed
     if (timer_ && !timer_->is_canceled()) {
         timer_->cancel();
     }
     timer_ = this->create_wall_timer(200ms, std::bind(&PipelineFSM::runFSM, this));
     
     RCLCPP_INFO(this->get_logger(), "✅ State updated. FSM timer restarted.");
+
+    // Force immediate processing to avoid delay
+    this->runFSM();
 }
 
 void PipelineFSM::runFSM()
@@ -376,49 +439,46 @@ void PipelineFSM::runFSM()
     RCLCPP_INFO(this->get_logger(), "⏰ FSM TICK - Current State: %d", static_cast<int>(current_state_));
     switch (current_state_) {
         case State::IDLE:
+            RCLCPP_INFO(this->get_logger(), "➡️ Starting pipeline from IDLE");
             transitionTo(State::NAV_TO_PICK_PRE);
             break;
 
         case State::NAV_TO_PICK_PRE:
+            RCLCPP_INFO(this->get_logger(), "🗺️ Navigating to pick_pre_amr");
             navigateTo("pick_pre_amr");
             transitionTo(State::WAIT_NAV_PICK_PRE);
             break;
 
         case State::WAIT_NAV_PICK_PRE:
-            if (!navigation_complete_) return;
+            if (!navigation_complete_) {
+                RCLCPP_INFO(this->get_logger(), "⏳ Waiting for navigation to complete...");
+                return;
+            }
             if (!navigation_succeeded_) {
                 RCLCPP_ERROR(this->get_logger(), "❌ Failed to reach pick_pre_amr. Retrying...");
                 transitionTo(State::NAV_TO_PICK_PRE);
                 return;
             }
+            RCLCPP_INFO(this->get_logger(), "✅ Reached pick_pre_amr");
             transitionTo(State::SLIDER_EXTEND);
             break;
 
         case State::SLIDER_EXTEND:
+            RCLCPP_INFO(this->get_logger(), "📏 Extending slider");
             sendSliderTrajectory();
             break;
 
         case State::SPAWN_BOX:
+            RCLCPP_INFO(this->get_logger(), "📦 Spawning box");
             callTriggerService("/spawn_box");
-            transitionTo(State::START_VISION);
+            transitionTo(State::WAIT_AFTER_SPAWN);
             break;
 
         case State::WAIT_AFTER_SPAWN:
-            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS),
+            RCLCPP_INFO(this->get_logger(), "⏳ Waiting 1s after spawn before moving arm...");
+            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_1000MS),
                 [this]() {
-                    RCLCPP_INFO(this->get_logger(), "⏰ time delay expired - sending arm to 'safe_pick_arm'");
-                });
-            break;
-
-        case State::START_VISION:
-            callStartDetection();
-            transitionTo(State::WAIT_VISION);  // Go to 6 first
-            break;
-
-        case State::WAIT_VISION:
-            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS),
-                [this]() {
-                    RCLCPP_INFO(this->get_logger(), "⏰ Vision delay expired - sending arm to 'safe_pick_arm'");
+                    RCLCPP_INFO(this->get_logger(), "⏰ 1s after spawn — sending arm to 'safe_pick_arm'");
                     this->sendArmTrajectory("safe_pick_arm");
                     this->transitionTo(State::MOVE_ARM_SAFE_PICK);
                     this->timer_->cancel();
@@ -426,58 +486,82 @@ void PipelineFSM::runFSM()
             break;
 
         case State::MOVE_ARM_SAFE_PICK:
-            RCLCPP_INFO(this->get_logger(), "🚀 Sending arm to 'safe_pick_arm'");
-            sendArmTrajectory("safe_pick_arm");
+            RCLCPP_INFO(this->get_logger(), "🛡️ Arm is moving to 'safe_pick_arm' (waiting for result...)");
             break;
 
-        case State::START_PICKING_1:
-            callTriggerService("/start_picking");
-            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_300MS),
+        case State::START_VISION:
+            RCLCPP_INFO(this->get_logger(), "👁️ Arm reached safe pose — starting vision detection");
+            callStartDetection();
+            transitionTo(State::WAIT_VISION_COMPLETE);
+            break;
+
+        case State::WAIT_VISION_COMPLETE:
+            RCLCPP_INFO(this->get_logger(), "⏳ Waiting 2s for vision to compute...");
+            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS),
                 [this]() {
-                    this->callTriggerService("/start_picking");
-                    this->transitionTo(State::ATTACH_OBJECT);
+                    RCLCPP_INFO(this->get_logger(), "⏰ Vision wait done — calling /start_picking");
+                    this->callStartPicking();
                     this->timer_->cancel();
                 });
             break;
 
+        case State::START_PICKING:
+            RCLCPP_INFO(this->get_logger(), "🤖 Waiting for /start_picking to complete...");
+            break;
+
         case State::ATTACH_OBJECT:
+            RCLCPP_INFO(this->get_logger(), "🧲 Attaching object...");
             callAttachDetach(true);
             transitionTo(State::MOVE_ARM_HOME);
             break;
 
         case State::MOVE_ARM_HOME:
-            sendArmTrajectory("home");
+            RCLCPP_INFO(this->get_logger(), "🏠 Sending arm home (if not already active)...");
+            if (!arm_goal_active_) {
+                sendArmTrajectory("home");
+            }
             break;
 
         case State::NAV_TO_MIDDLE:
+            RCLCPP_INFO(this->get_logger(), "🧭 Navigating to middle_amr");
             navigateTo("middle_amr");
             transitionTo(State::WAIT_NAV_MIDDLE);
             break;
 
         case State::WAIT_NAV_MIDDLE:
-            if (!navigation_complete_) return;
+            if (!navigation_complete_) {
+                RCLCPP_INFO(this->get_logger(), "⏳ Waiting for navigation to middle...");
+                return;
+            }
             if (!navigation_succeeded_) {
                 RCLCPP_ERROR(this->get_logger(), "❌ Failed to reach middle_amr");
                 return;
             }
+            RCLCPP_INFO(this->get_logger(), "✅ Reached middle_amr");
             transitionTo(State::NAV_TO_LIFT_0);
             break;
 
         case State::NAV_TO_LIFT_0:
+            RCLCPP_INFO(this->get_logger(), "🚪 Navigating to lift_0_amr");
             navigateTo("lift_0_amr");
             transitionTo(State::WAIT_NAV_LIFT_0);
             break;
 
         case State::WAIT_NAV_LIFT_0:
-            if (!navigation_complete_) return;
+            if (!navigation_complete_) {
+                RCLCPP_INFO(this->get_logger(), "⏳ Waiting for navigation to lift_0...");
+                return;
+            }
             if (!navigation_succeeded_) {
                 RCLCPP_ERROR(this->get_logger(), "❌ Failed to reach lift_0_amr");
                 return;
             }
+            RCLCPP_INFO(this->get_logger(), "✅ Reached lift_0_amr");
             transitionTo(State::CALL_ELEVATOR);
             break;
 
         case State::CALL_ELEVATOR:
+            RCLCPP_INFO(this->get_logger(), "🛗 Calling elevator (SetBool true)");
             callSetBoolService("/elevator_cmd", true);
             timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS),
                 [this]() {
@@ -487,6 +571,7 @@ void PipelineFSM::runFSM()
             break;
 
         case State::SWITCH_FLOOR:
+            RCLCPP_INFO(this->get_logger(), "🧱 Switching to Floor 1");
             publishBoolTopic("/use_floor_1", true);
             timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_1000MS),
                 [this]() {
@@ -496,28 +581,36 @@ void PipelineFSM::runFSM()
             break;
 
         case State::NAV_TO_DROP_PRE_AMR:
+            RCLCPP_INFO(this->get_logger(), "🧭 Navigating to drop_pre_amr");
             navigateTo("drop_pre_amr");
             transitionTo(State::WAIT_NAV_DROP_PRE_AMR);
             break;
 
         case State::WAIT_NAV_DROP_PRE_AMR:
-            if (!navigation_complete_) return;
+            if (!navigation_complete_) {
+                RCLCPP_INFO(this->get_logger(), "⏳ Waiting for navigation to drop_pre...");
+                return;
+            }
             if (!navigation_succeeded_) {
                 RCLCPP_ERROR(this->get_logger(), "❌ Failed to reach drop_pre_amr");
                 return;
             }
+            RCLCPP_INFO(this->get_logger(), "✅ Reached drop_pre_amr");
             transitionTo(State::MOVE_ARM_DROP_PRE);
             break;
 
         case State::MOVE_ARM_DROP_PRE:
+            RCLCPP_INFO(this->get_logger(), "📤 Sending arm to 'drop_pre'");
             sendArmTrajectory("drop_pre");
             break;
 
         case State::MOVE_ARM_DROP:
+            RCLCPP_INFO(this->get_logger(), "📤 Sending arm to 'drop'");
             sendArmTrajectory("drop");
             break;
 
         case State::DETACH_OBJECT:
+            RCLCPP_INFO(this->get_logger(), "🧲 Detaching object...");
             callAttachDetach(false);
             timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_500MS),
                 [this]() {
@@ -527,16 +620,19 @@ void PipelineFSM::runFSM()
             break;
 
         case State::MOVE_ARM_HOME_FINAL:
-            sendArmTrajectory("home");
+            RCLCPP_INFO(this->get_logger(), "🏠 Final arm home movement (if not already active)...");
+            if (!arm_goal_active_) {
+                sendArmTrajectory("home");
+            }
             break;
 
         case State::DONE:
             RCLCPP_INFO(this->get_logger(), "🎉✅ PIPELINE COMPLETED SUCCESSFULLY");
-            timer_->cancel();
+            if (timer_) timer_->cancel();
             break;
 
         default:
-            RCLCPP_WARN(this->get_logger(), "⚠️ Unknown state");
+            RCLCPP_WARN(this->get_logger(), "⚠️ Unknown state: %d", static_cast<int>(current_state_));
             break;
     }
 }

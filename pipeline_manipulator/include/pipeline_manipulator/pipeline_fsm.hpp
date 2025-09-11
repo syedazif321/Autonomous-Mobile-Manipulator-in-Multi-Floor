@@ -27,12 +27,11 @@ public:
         WAIT_NAV_PICK_PRE,
         SLIDER_EXTEND,
         SPAWN_BOX,
-        WAIT_VISION_0, 
-        START_VISION,      
-        WAIT_VISION,           
-        MOVE_ARM_SAFE_PICK,    
-        START_PICKING_1,
-        START_PICKING_2,
+        WAIT_AFTER_SPAWN,
+        MOVE_ARM_SAFE_PICK,
+        START_VISION,
+        WAIT_VISION_COMPLETE,
+        START_PICKING,
         ATTACH_OBJECT,
         MOVE_ARM_HOME,
         NAV_TO_MIDDLE,
@@ -54,12 +53,13 @@ public:
 
 private:
     void runFSM();
-    void transitionTo(State next);
+    void transitionTo(State next); 
     void loadTargets();
     void navigateTo(const std::string& target_name);
     void sendSliderTrajectory();
     void callTriggerService(const std::string& service_name);
-    void callStartDetection();  
+    void callStartDetection();
+    void callStartPicking();
     void callAttachDetach(bool attach);
     void callSetBoolService(const std::string& service_name, bool data);
     void publishBoolTopic(const std::string& topic_name, bool data);
@@ -80,25 +80,25 @@ private:
     rclcpp::Client<msg_gazebo::srv::AttachDetach>::SharedPtr attach_detach_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr elevator_client_;
 
-    // Publisher
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr floor_pub_;
 
-    // Navigation state flags
     bool navigation_goal_sent_ = false;
     bool navigation_complete_ = false;
     bool navigation_succeeded_ = false;
 
-    // Slider flag
     bool slider_goal_active_ = false;
+
+
+    bool arm_goal_active_ = false;
 
     // Loaded targets
     nlohmann::json targets_json_;
 
-    // Delays
+    // Delays (in ms)
     const int DELAY_500MS = 500;
-    const int DELAY_300MS = 300;
-    const int DELAY_2000MS = 2000;
     const int DELAY_1000MS = 1000;
+    const int DELAY_2000MS = 2000;
+    const int DELAY_3000MS = 3000;
     const int DELAY_200MS = 200;
 };
 
