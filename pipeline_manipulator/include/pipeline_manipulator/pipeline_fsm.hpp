@@ -27,6 +27,7 @@ public:
         WAIT_NAV_PICK_PRE,
         SLIDER_EXTEND,
         SPAWN_BOX,
+        WAIT_VISION_0, 
         START_VISION,      
         WAIT_VISION,           
         MOVE_ARM_SAFE_PICK,    

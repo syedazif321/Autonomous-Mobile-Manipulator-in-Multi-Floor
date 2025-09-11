@@ -284,8 +284,10 @@ void PipelineFSM::publishBoolTopic(const std::string& topic_name, bool data)
 
 void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
 {
+    RCLCPP_INFO(this->get_logger(), "🔧 ENTERED sendArmTrajectory for: %s", joint_target_name.c_str());
+
     if (!targets_json_["arm_positions"].contains(joint_target_name)) {
-        RCLCPP_ERROR(this->get_logger(), "Arm position '%s' not found", joint_target_name.c_str());
+        RCLCPP_ERROR(this->get_logger(), "❌ Arm position '%s' not found in JSON!", joint_target_name.c_str());
         return;
     }
 
@@ -294,6 +296,9 @@ void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
     for (auto& v : joint_values) {
         positions.push_back(v.get<double>());
     }
+
+    RCLCPP_INFO(this->get_logger(), "🎯 Target positions: [%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f]",
+        positions[0], positions[1], positions[2], positions[3], positions[4], positions[5], positions[6]);
 
     auto goal_msg = control_msgs::action::FollowJointTrajectory::Goal();
     goal_msg.trajectory.joint_names = {"joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7"};
@@ -306,16 +311,16 @@ void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
     send_goal_options.goal_response_callback =
         [this, joint_target_name](const rclcpp_action::ClientGoalHandle<control_msgs::action::FollowJointTrajectory>::SharedPtr & goal_handle) {
             if (!goal_handle) {
-                RCLCPP_ERROR(this->get_logger(), "Arm goal '%s' rejected", joint_target_name.c_str());
+                RCLCPP_ERROR(this->get_logger(), "❌ Arm goal '%s' REJECTED", joint_target_name.c_str());
             } else {
-                RCLCPP_INFO(this->get_logger(), "Arm goal '%s' accepted", joint_target_name.c_str());
+                RCLCPP_INFO(this->get_logger(), "✅ Arm goal '%s' ACCEPTED", joint_target_name.c_str());
             }
         };
 
     send_goal_options.result_callback =
         [this, joint_target_name](const rclcpp_action::ClientGoalHandle<control_msgs::action::FollowJointTrajectory>::WrappedResult & result) {
             if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
-                RCLCPP_INFO(this->get_logger(), "✅ Arm movement to '%s' succeeded", joint_target_name.c_str());
+                RCLCPP_INFO(this->get_logger(), "🎉 Arm movement to '%s' SUCCEEDED", joint_target_name.c_str());
                 switch (this->current_state_) {
                     case State::MOVE_ARM_SAFE_PICK:
                         this->transitionTo(State::START_PICKING_1);
@@ -336,21 +341,39 @@ void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
                         break;
                 }
             } else {
-                RCLCPP_ERROR(this->get_logger(), "❌ Arm movement to '%s' failed", joint_target_name.c_str());
+                RCLCPP_ERROR(this->get_logger(), "❌ Arm movement to '%s' FAILED with code: %d", joint_target_name.c_str(), static_cast<int>(result.code));
             }
         };
 
+    RCLCPP_INFO(this->get_logger(), "📤 Sending arm trajectory goal to server...");
+
+    // Check if action server is still available
+    if (!arm_client_->action_server_is_ready()) {
+        RCLCPP_ERROR(this->get_logger(), "❌ Arm action server is NOT ready!");
+        return;
+    }
+
     arm_client_->async_send_goal(goal_msg, send_goal_options);
+    RCLCPP_INFO(this->get_logger(), "✅ Arm goal sent successfully.");
 }
 
 void PipelineFSM::transitionTo(State next)
 {
     RCLCPP_INFO(this->get_logger(), "🔄 TRANSITION: %d → %d", static_cast<int>(current_state_), static_cast<int>(next));
     current_state_ = next;
+    
+    // Restart FSM timer to ensure next state is processed
+    if (timer_ && !timer_->is_canceled()) {
+        timer_->cancel();
+    }
+    timer_ = this->create_wall_timer(200ms, std::bind(&PipelineFSM::runFSM, this));
+    
+    RCLCPP_INFO(this->get_logger(), "✅ State updated. FSM timer restarted.");
 }
 
 void PipelineFSM::runFSM()
 {
+    RCLCPP_INFO(this->get_logger(), "⏰ FSM TICK - Current State: %d", static_cast<int>(current_state_));
     switch (current_state_) {
         case State::IDLE:
             transitionTo(State::NAV_TO_PICK_PRE);
@@ -380,16 +403,30 @@ void PipelineFSM::runFSM()
             transitionTo(State::START_VISION);
             break;
 
+        case State::WAIT_AFTER_SPAWN:
+            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS),
+                [this]() {
+                    RCLCPP_INFO(this->get_logger(), "⏰ time delay expired - sending arm to 'safe_pick_arm'");
+                });
+            break;
+
         case State::START_VISION:
             callStartDetection();
-            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS), // 2 seconds
+            transitionTo(State::WAIT_VISION);  // Go to 6 first
+            break;
+
+        case State::WAIT_VISION:
+            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_2000MS),
                 [this]() {
+                    RCLCPP_INFO(this->get_logger(), "⏰ Vision delay expired - sending arm to 'safe_pick_arm'");
+                    this->sendArmTrajectory("safe_pick_arm");
                     this->transitionTo(State::MOVE_ARM_SAFE_PICK);
                     this->timer_->cancel();
                 });
             break;
 
         case State::MOVE_ARM_SAFE_PICK:
+            RCLCPP_INFO(this->get_logger(), "🚀 Sending arm to 'safe_pick_arm'");
             sendArmTrajectory("safe_pick_arm");
             break;
 
