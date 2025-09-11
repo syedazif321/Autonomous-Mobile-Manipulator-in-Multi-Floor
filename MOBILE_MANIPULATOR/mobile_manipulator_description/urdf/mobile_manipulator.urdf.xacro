@@ -55,6 +55,36 @@
 
   <xacro:include filename="$(find mobile_manipulator_description)/urdf/camera_module.urdf.xacro"/>
 
+  <link name="cylinder_link">
+  <visual>
+    <geometry>
+      <cylinder radius="0.01" length="0.71"/>
+    </geometry>
+    <material name="Grey">
+      <color rgba="0.7 0.7 0.7 1"/>
+    </material>
+  </visual>
+  <collision>
+    <geometry>
+      <cylinder radius="0.01" length="0.71"/>
+    </geometry>
+  </collision>
+  <inertial>
+    <mass value="0.5"/>
+    <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+  </inertial>
+</link>
+
+ <joint name="rod_to_camera" type="fixed">
+    <parent link="camera_link_base"/>        
+    <child  link="cylinder_link"/>     
+    <origin xyz="0.01 0 -0.36" rpy="0 0 0"/>
+  </joint>
+
+    <gazebo reference="cylinder_link">
+      <material>Gazebo/Grey</material>
+  </gazebo>
+
   <xacro:intel_d435_camera/>
   <joint name="sliderto_camera" type="fixed">
     <parent link="link_base"/>        

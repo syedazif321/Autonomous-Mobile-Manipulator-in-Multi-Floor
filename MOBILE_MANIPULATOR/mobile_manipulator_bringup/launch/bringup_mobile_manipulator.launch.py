@@ -17,13 +17,12 @@ def generate_launch_description():
     pkg_gazebo = get_package_share_directory("alphabot_gazebo")
     pkg_moveit = get_package_share_directory("rm_75_config")
     pkg_arm = get_package_share_directory("rm_description")
-
-    # --- Files ---
+ 
     srdf_file = os.path.join(pkg_moveit, "config", "rm_75_description.srdf")
     kinematics_yaml_file = os.path.join(pkg_moveit, "config", "kinematics.yaml")
     full_urdf_file = os.path.join(pkg_desc, "urdf", "mobile_manipulator.urdf.xacro")
     arm_urdf_file = os.path.join(pkg_arm, "urdf", "rm_75_gazebo.urdf")
-
+    
     
 
     # --- Load YAML ---
@@ -74,6 +73,7 @@ def generate_launch_description():
         arguments=["-entity", LaunchConfiguration("entity"), "-topic", "robot_description"],
         output="screen"
     )
+
 
     # --- Controllers ---
     jsb_spawner = Node(
