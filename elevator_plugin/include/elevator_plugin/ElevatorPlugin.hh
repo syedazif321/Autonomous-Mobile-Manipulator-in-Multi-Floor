@@ -42,4 +42,4 @@ namespace gazebo
     private: std::unique_ptr<ElevatorPluginPrivate> dataPtr;
   };
 }
-#endi
+#endif

@@ -45,7 +45,7 @@ public:
           // >>>>>>>>>>>>>>>>>>>> ADD RPY OFFSET PARAMETERS <<<<<<<<<<<<<<<<<<<<<
         roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),
         pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),
-        yaw_offset_deg_(declare_parameter("yaw_offset_deg", 0.0)),
+        yaw_offset_deg_(declare_parameter("yaw_offset_deg", -180.0)),
           // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         detection_active_(false),
         has_detected_(false),
@@ -193,7 +193,7 @@ private:
                 rgb = cv_bridge::toCvCopy(rgb_msg, sensor_msgs::image_encodings::BGR8)->image;
                 depth32 = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1)->image;
             } catch (const cv_bridge::Exception& e) {
-                RCLCPP_ERROR(get_logger(), "❌ CV_BRIDGE ERROR in FROZEN branch: %s", e.what());
+                RCLCPP_ERROR(get_logger(), " CV_BRIDGE ERROR in FROZEN branch: %s", e.what());
                 return;
             }
 
@@ -214,7 +214,7 @@ private:
             rgb = cv_bridge::toCvCopy(rgb_msg, sensor_msgs::image_encodings::BGR8)->image;
             depth32 = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1)->image;
         } catch (const cv_bridge::Exception& e) {
-            RCLCPP_ERROR(get_logger(), "❌ CV_BRIDGE ERROR in MAIN branch: %s", e.what());
+            RCLCPP_ERROR(get_logger(), "CV_BRIDGE ERROR in MAIN branch: %s", e.what());
             return;
         }
 

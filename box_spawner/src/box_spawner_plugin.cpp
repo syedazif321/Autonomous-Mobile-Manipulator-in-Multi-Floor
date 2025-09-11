@@ -9,7 +9,6 @@
 #include <sdf/sdf.hh>
 #include <random>
 #include <sstream>
-#include <map>
 
 namespace gazebo
 {
@@ -26,7 +25,7 @@ public:
       "spawn_box",
       std::bind(&BoxSpawnerPlugin::SpawnBoxCallback, this, std::placeholders::_1, std::placeholders::_2));
 
-    RCLCPP_INFO(ros_node_->get_logger(), " BoxSpawnerPlugin loaded and 'spawn_box' service available.");
+    RCLCPP_INFO(ros_node_->get_logger(), "BoxSpawnerPlugin loaded and 'spawn_box' service available.");
   }
 
 private:
@@ -36,19 +35,14 @@ private:
 
   std::default_random_engine gen_;
 
-  double x =-0.443003;
-  double y = 18.55; 
+  double x = 0.199286;
+  double y = 17.176670; 
   double yaw = 0.0;
-   
-  
-      
-
 
   std::uniform_real_distribution<double> size_dist_{0.18, 0.25};
+  double mass_ = 20.0;
 
-  std::map<std::string, int> color_counter_ = {{"Red", 1}, {"Blue", 1}};
-
-  double mass_ = 20.0; 
+  int box_counter_ = 0;  // Sequential box counter
 
   void SpawnBoxCallback(
     const std_srvs::srv::Trigger::Request::SharedPtr,
@@ -58,15 +52,12 @@ private:
 
     double size = size_dist_(gen_);
     double inertia_val = (1.0 / 6.0) * mass_ * size * size;
+    double z = 1.372966 + size / 2.0;
 
-
-    double z = 1.521734 + size / 2.0;
-    
-
-    int id = color_counter_[color]++;
+    // Sequential model name: model_0, model_1, ...
     std::ostringstream name;
-    name << color << "_" << id;
-
+    name << "model_" << box_counter_++;
+    
     std::ostringstream sdf_str;
     sdf_str << "<sdf version='1.6'>"
             << "<model name='" << name.str() << "'>"
@@ -113,7 +104,7 @@ private:
 
     res->success = true;
     res->message = "Spawned box: " + name.str();
-    RCLCPP_INFO(ros_node_->get_logger(), " Spawned %s (color=%s, size=%.3f)", name.str().c_str(), color.c_str(), size);
+    RCLCPP_INFO(ros_node_->get_logger(), "Spawned %s (color=%s, size=%.3f)", name.str().c_str(), color.c_str(), size);
   }
 };
 

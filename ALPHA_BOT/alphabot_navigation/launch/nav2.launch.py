@@ -20,7 +20,7 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': use_sim_time,
             'autostart': autostart,
-            'map': os.path.join(pkg_bcr, 'config', 'alpha_bot.yaml'),
+            'map': os.path.join(pkg_bcr, 'config', 'floor_0.yaml'),
             'params_file': os.path.join(pkg_bcr, 'config', 'nav2_params.yaml'),
         }.items()
     )

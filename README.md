@@ -40,6 +40,28 @@ ros2 launch rm_75_config moveit_bringup.launch.py
 
 
 ros2 topic pub /floor_number std_msgs/msg/Int32 "{data: 1}"
-
+ros2 topic pub /use_floor_1 std_msgs/msg/Bool "data: true"
 
 ros2 run alphabot_navigation map_switcher
+
+
+
+ros2 topic pub /rm_group_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory "
+header:
+  stamp:
+    sec: 0
+    nanosec: 0
+joint_names:
+  - joint1
+  - joint2
+  - joint3
+  - joint4
+  - joint5
+  - joint6
+  - joint7
+points:
+  - positions: [0.20628457198415084, -0.7539909602519401, -0.12728435610693634, 1.4316382470480633, -0.14625234227838213, 0.8646056681978287, 0.005513037543281918]
+    time_from_start:
+      sec: 3
+      nanosec: 0
+"

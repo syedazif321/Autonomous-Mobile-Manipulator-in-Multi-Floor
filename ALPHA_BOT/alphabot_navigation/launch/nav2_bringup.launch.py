@@ -11,7 +11,7 @@ def generate_launch_description():
     alphabot_nav = get_package_share_directory("alphabot_navigation")
 
     params_file = os.path.join(alphabot_nav, "config", "nav2_params.yaml")
-    map_file = os.path.join(alphabot_nav, "config", "alphabot_map.yaml")  # create later
+    map_file = os.path.join(alphabot_nav, "config", "floor_0.yaml") 
 
     use_sim_time = LaunchConfiguration("use_sim_time", default="true")
 

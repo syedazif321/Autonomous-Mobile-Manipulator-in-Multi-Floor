@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/int32.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "nav2_msgs/srv/load_map.hpp"
 #include "nav2_msgs/srv/clear_entire_costmap.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -19,8 +19,8 @@ public:
     std::string pkg_share = ament_index_cpp::get_package_share_directory("alphabot_navigation");
     std::string config_dir = pkg_share + "/config";
 
-    map_paths_[0] = config_dir + "/floor_0.yaml";
-    map_paths_[1] = config_dir + "/floor_1.yaml";
+    map_paths_[false] = config_dir + "/floor_0.yaml";
+    map_paths_[true]  = config_dir + "/floor_1.yaml";
 
     map_client_ = this->create_client<nav2_msgs::srv::LoadMap>("/map_server/load_map");
     clear_global_client_ = this->create_client<nav2_msgs::srv::ClearEntireCostmap>(
@@ -32,22 +32,17 @@ public:
     wait_for_service(clear_global_client_, "global_costmap/clear_entirely_global_costmap");
     wait_for_service(clear_local_client_, "local_costmap/clear_entirely_local_costmap");
 
-    floor_sub_ = this->create_subscription<std_msgs::msg::Int32>(
-      "/floor_number", 10, std::bind(&FloorMapSwitcher::floor_callback, this, _1));
+    floor_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/use_floor_1", 10, std::bind(&FloorMapSwitcher::floor_callback, this, _1));
 
-    RCLCPP_INFO(this->get_logger(), " FloorMapSwitcher node started.");
+    RCLCPP_INFO(this->get_logger(), "FloorMapSwitcher node started. Listening on /use_floor_1 (bool).");
   }
 
 private:
-  void floor_callback(const std_msgs::msg::Int32::SharedPtr msg)
+  void floor_callback(const std_msgs::msg::Bool::SharedPtr msg)
   {
-    int floor = msg->data;
-    if (map_paths_.find(floor) == map_paths_.end()) {
-      RCLCPP_WARN(this->get_logger(), " Unknown floor: %d", floor);
-      return;
-    }
-
-    std::string map_yaml = map_paths_[floor];
+    bool use_floor1 = msg->data;
+    std::string map_yaml = map_paths_[use_floor1];
     RCLCPP_INFO(this->get_logger(), "Switching to map: %s", map_yaml.c_str());
 
     auto req = std::make_shared<nav2_msgs::srv::LoadMap::Request>();
@@ -59,10 +54,10 @@ private:
       {
         auto result = future.get();
         if (result->result != nav2_msgs::srv::LoadMap::Response::RESULT_SUCCESS) {
-          RCLCPP_ERROR(this->get_logger(), " LoadMap failed with code: %d", result->result);
+          RCLCPP_ERROR(this->get_logger(), "LoadMap failed with code: %d", result->result);
           return;
         }
-        RCLCPP_INFO(this->get_logger(), " Map switched successfully.");
+        RCLCPP_INFO(this->get_logger(), "Map switched successfully.");
 
         // Clear costmaps asynchronously
         clear_costmap(clear_global_client_, "global_costmap");
@@ -76,7 +71,7 @@ private:
       if (!rclcpp::ok()) return;
       RCLCPP_INFO(this->get_logger(), "Waiting for %s service...", name.c_str());
     }
-    RCLCPP_INFO(this->get_logger(), " Connected to %s service", name.c_str());
+    RCLCPP_INFO(this->get_logger(), "Connected to %s service", name.c_str());
   }
 
   void clear_costmap(rclcpp::Client<nav2_msgs::srv::ClearEntireCostmap>::SharedPtr client,
@@ -88,18 +83,18 @@ private:
       {
         try {
           future.get();
-          RCLCPP_INFO(this->get_logger(), " Cleared %s", name.c_str());
+          RCLCPP_INFO(this->get_logger(), "Cleared %s", name.c_str());
         } catch (const std::exception & e) {
-          RCLCPP_WARN(this->get_logger(), " Failed to clear %s: %s", name.c_str(), e.what());
+          RCLCPP_WARN(this->get_logger(), "Failed to clear %s: %s", name.c_str(), e.what());
         }
       });
   }
 
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr floor_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr floor_sub_;
   rclcpp::Client<nav2_msgs::srv::LoadMap>::SharedPtr map_client_;
   rclcpp::Client<nav2_msgs::srv::ClearEntireCostmap>::SharedPtr clear_global_client_;
   rclcpp::Client<nav2_msgs::srv::ClearEntireCostmap>::SharedPtr clear_local_client_;
-  std::unordered_map<int, std::string> map_paths_;
+  std::unordered_map<bool, std::string> map_paths_;
 };
 
 int main(int argc, char ** argv)
