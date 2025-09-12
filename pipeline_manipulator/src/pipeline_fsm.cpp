@@ -669,7 +669,7 @@ void PipelineFSM::runFSM()
         case State::MOVE_ARM_HOME_FINAL:
             RCLCPP_INFO(this->get_logger(), " Final arm home movement (if not already active)...");
             if (!arm_goal_active_) {
-                sendArmTrajectory("home");
+                sendArmTrajectory("drop_pre");
             }
             break;
 
