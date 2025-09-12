@@ -4184,19 +4184,19 @@
         <trajectory id='0' type='run'>
           <waypoint>
             <time>0</time>
-            <pose>1.5 1 0 0 -0 1.57</pose>
+            <pose>-4 13 0.07 0 -0 0</pose>
           </waypoint>
           <waypoint>
-            <time>6</time>
-            <pose>1.5 2 0 0 -0 1.57</pose>
+            <time>7</time>
+            <pose>5 13 0.07 0 -0 0</pose>
           </waypoint>
           <waypoint>
-            <time>8</time>
-            <pose>1.5 2 0 0 0 -1.57</pose>
+            <time>9</time>
+            <pose>5 13 0.07 0 0 3.14</pose>
           </waypoint>
           <waypoint>
-            <time>10</time>
-            <pose>1.5 1 0 0 0 -1.57</pose>
+            <time>16</time>
+            <pose>-4 13 0.07 0 0 3.14</pose>
           </waypoint>
         </trajectory>
       </script>
@@ -6206,19 +6206,19 @@
         <trajectory id='0' type='run'>
           <waypoint>
             <time>0</time>
-            <pose>2 2 0 0 -0 1.57</pose>
-          </waypoint>
-          <waypoint>
-            <time>3</time>
-            <pose>2 3 0 0 -0 1.57</pose>
+            <pose>-4 5 0.07 0 -0 0</pose>
           </waypoint>
           <waypoint>
             <time>7</time>
-            <pose>2 3 0 0 0 -1.57</pose>
+            <pose>7.5 5 0.07 0 -0 0</pose>
           </waypoint>
           <waypoint>
-            <time>11</time>
-            <pose>2 2 0 0 0 -1.57</pose>
+            <time>9</time>
+            <pose>7.5 5 0.07 0 0 3.14</pose>
+          </waypoint>
+          <waypoint>
+            <time>16</time>
+            <pose>-4 5 0.07 0 0 3.14</pose>
           </waypoint>
         </trajectory>
       </script>
