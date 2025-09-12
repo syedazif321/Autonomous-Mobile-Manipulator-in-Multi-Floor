@@ -81,6 +81,10 @@ add_executable(pipeline_fsm
   src/pipeline_fsm.cpp
 )
 
+target_link_libraries(pipeline_fsm
+  sqlite3  
+)
+
 ament_target_dependencies(pipeline_fsm
   rclcpp
   rclcpp_action
