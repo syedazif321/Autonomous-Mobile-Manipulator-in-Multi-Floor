@@ -23,11 +23,11 @@ class CmdVelRemapper(Node):
         )
         self.subscription  # Prevent unused variable warning
 
-        # Create a publisher for the bcr_bot/cmd_vel topic
+     
         self.publisher = self.create_publisher(Twist, '/cmd_vel', qos_profile)
 
     def cmd_vel_callback(self, msg):
-        # Republish the received message to bcr_bot/cmd_vel
+ 
         self.publisher.publish(msg)
 
 def main(args=None):

@@ -35,7 +35,7 @@ public:
         ATTACH_OBJECT,
         MOVE_ARM_HOME,
         NAV_TO_MIDDLE,
-        WAIT_NAV_MIDDLE,
+        // WAIT_NAV_MIDDLE,
         NAV_TO_LIFT_0,
         WAIT_NAV_LIFT_0,
         CALL_ELEVATOR,

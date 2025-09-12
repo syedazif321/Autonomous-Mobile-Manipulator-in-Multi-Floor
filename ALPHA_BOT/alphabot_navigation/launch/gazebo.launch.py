@@ -12,9 +12,10 @@ from launch.actions import SetEnvironmentVariable
 from launch.actions import AppendEnvironmentVariable
 
 def generate_launch_description():
-    # Get bcr_bot package's share directory path
+
     mobile_manipulator_path = get_package_share_directory('mobile_manipulator_bringup')
     world_path = get_package_share_directory('alphabot_gazebo')
+    nav_path = get_package_share_directory('alphabot_navigation')
 
     # Retrieve launch configuration arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
@@ -32,6 +33,9 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(join(mobile_manipulator_path, "launch", "bringup_mobile_manipulator.launch.py")),
     )
 
+    nav2_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(join(nav_path, "launch", 'nav2.launch.py')),
+    )
+
     return LaunchDescription([
         # Declare launch arguments
         
@@ -46,5 +50,6 @@ def generate_launch_description():
         DeclareLaunchArgument('gui', default_value='true'),
         DeclareLaunchArgument('verbose', default_value='false'),
         DeclareLaunchArgument('use_sim_time', default_value = use_sim_time),
-        spawn_mobile_manipulator
+        spawn_mobile_manipulator,
+        nav2_launch
     ])

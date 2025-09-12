@@ -35,11 +35,11 @@ private:
 
   std::default_random_engine gen_;
 
-  double x = 0.199286;
-  double y = 17.332790; 
+  double x = 0.217246;
+  double y = 17.44981; 
   double yaw = 0.0;
 
-  std::uniform_real_distribution<double> size_dist_{0.18, 0.25};
+  std::uniform_real_distribution<double> size_dist_{0.15, 0.16};
   double mass_ = 20.0;
 
   int box_counter_ = 0;  // Sequential box counter

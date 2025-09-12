@@ -518,28 +518,28 @@ void PipelineFSM::runFSM()
         case State::MOVE_ARM_HOME:
             RCLCPP_INFO(this->get_logger(), "🏠 Sending arm home (if not already active)...");
             if (!arm_goal_active_) {
-                sendArmTrajectory("home");
+                sendArmTrajectory("safe_pick_arm");
             }
             break;
 
         case State::NAV_TO_MIDDLE:
             RCLCPP_INFO(this->get_logger(), "🧭 Navigating to middle_amr");
-            navigateTo("middle_amr");
-            transitionTo(State::WAIT_NAV_MIDDLE);
-            break;
-
-        case State::WAIT_NAV_MIDDLE:
-            if (!navigation_complete_) {
-                RCLCPP_INFO(this->get_logger(), "⏳ Waiting for navigation to middle...");
-                return;
-            }
-            if (!navigation_succeeded_) {
-                RCLCPP_ERROR(this->get_logger(), "❌ Failed to reach middle_amr");
-                return;
-            }
-            RCLCPP_INFO(this->get_logger(), "✅ Reached middle_amr");
+            // navigateTo("middle_amr");
             transitionTo(State::NAV_TO_LIFT_0);
             break;
+
+        // case State::WAIT_NAV_MIDDLE:
+        //     if (!navigation_complete_) {
+        //         RCLCPP_INFO(this->get_logger(), "⏳ Waiting for navigation to middle...");
+        //         return;
+        //     }
+        //     if (!navigation_succeeded_) {
+        //         RCLCPP_ERROR(this->get_logger(), "❌ Failed to reach middle_amr");
+        //         return;
+        //     }
+        //     RCLCPP_INFO(this->get_logger(), "✅ Reached middle_amr");
+        //     transitionTo(State::NAV_TO_LIFT_0);
+        //     break;
 
         case State::NAV_TO_LIFT_0:
             RCLCPP_INFO(this->get_logger(), "🚪 Navigating to lift_0_amr");

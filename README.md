@@ -60,8 +60,29 @@ joint_names:
   - joint6
   - joint7
 points:
-  - positions: [0.20628457198415084, -0.7539909602519401, -0.12728435610693634, 1.4316382470480633, -0.14625234227838213, 0.8646056681978287, 0.005513037543281918]
+  - positions: [-1.5105236109266285, -0.7539909602519401, -0.12728435610693634, 1.4316382470480633, -0.14625234227838213, 0.8646056681978287, 0.005513037543281918]
     time_from_start:
       sec: 3
       nanosec: 0
 "
+
+ros2 topic pub /rm_group_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory "
+header:
+  stamp:
+    sec: 0
+    nanosec: 0
+joint_names:
+  - joint1
+  - joint2
+  - joint3
+  - joint4
+  - joint5
+  - joint6
+  - joint7
+points:
+  - positions: [-1.51844, 0.40143, -0.76795, 0.64577, 0.89012, 0.66323, -0.45379]
+    time_from_start:
+      sec: 3
+      nanosec: 0
+"
+

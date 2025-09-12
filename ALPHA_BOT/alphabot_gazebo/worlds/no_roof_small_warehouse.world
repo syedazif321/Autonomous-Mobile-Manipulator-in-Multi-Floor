@@ -2013,10 +2013,10 @@
         </link>
       </model>
       <model name='rack'>
-        <pose>-0.660551 -3.66836 2.83356 0 0 -1.57514</pose>
+        <pose>-0.727148 -3.758549 2.610371 0 0 1.539111</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose>-0.660551 -3.66836 2.83356 0 0 -1.57514</pose>
+          <pose>-0.727148 -3.758549 2.610371 0 0 1.539111</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -4164,5 +4164,6 @@
       </link>
       <pose>0.59954 20.0089 2.83356 0 -0 0</pose>
     </model>
+    
   </world>
 </sdf>

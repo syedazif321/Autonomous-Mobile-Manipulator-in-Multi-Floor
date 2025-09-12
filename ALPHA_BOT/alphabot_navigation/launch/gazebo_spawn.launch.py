@@ -17,8 +17,8 @@ def get_xacro_to_doc(xacro_file_path, mappings):
     return doc
 
 def generate_launch_description():
-    # Get bcr_bot package's share directory path
-    bcr_bot_path = get_package_share_directory('alphabot_navigation')
+    # Get alpha_bot package's share directory path
+    alpha_bot_path = get_package_share_directory('alphabot_navigation')
     
     # Retrieve launch configuration arguments
     position_x = LaunchConfiguration("position_x")
@@ -31,7 +31,7 @@ def generate_launch_description():
     robot_namespace = LaunchConfiguration("robot_namespace", default='')
     
     # Path to the Xacro file
-    xacro_path = join(bcr_bot_path, 'urdf', 'alphabot.urdf.xacro')
+    xacro_path = join(alpha_bot_path, 'urdf', 'alphabot.urdf.xacro')
     #doc = get_xacro_to_doc(xacro_path, {"wheel_odom_topic": "odom", "sim_gazebo": "true", "two_d_lidar_enabled": "true", "camera_enabled": "true"})
 
     # Launch the robot_state_publisher node
@@ -62,7 +62,7 @@ def generate_launch_description():
         output='screen',
         arguments=[
             '-topic', "/robot_description",
-            '-entity', PythonExpression(['"', robot_namespace, '_robot"']), #default enitity name _bcr_bot
+            '-entity', PythonExpression(['"', robot_namespace, '_robot"']), #default enitity name _alpha_bot
             '-z', "0.28",
             '-x', "0.040862",
             '-y', "18.581000",

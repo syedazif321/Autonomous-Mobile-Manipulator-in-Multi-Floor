@@ -145,7 +145,7 @@ controller_server:
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5
       rotate_to_heading_angular_vel: 1.8
-      max_angular_accel: 3.2
+      max_angular_accel: 5.0
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: false
 
@@ -312,14 +312,15 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.26, 0.0, 1.0]
-    min_velocity: [-0.26, 0.0, -1.0]
+    max_velocity: [1.5, 0.0, 2.5]  # Maximum velocities, ordered [Vx, Vy, Vw]
+    min_velocity: [-1.5, 0.0, -2.5]
     max_accel: [2.5, 0.0, 3.2]
     max_decel: [-2.5, 0.0, -3.2]
     odom_topic: "odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
+    odom_duration: 0.1
 
 
 lifecycle_manager:
