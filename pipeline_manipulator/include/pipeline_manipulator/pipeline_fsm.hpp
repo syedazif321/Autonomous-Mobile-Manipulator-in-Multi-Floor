@@ -67,6 +67,7 @@ private:
 
     State current_state_;
     rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr delay_timer_;
 
     // Action clients
     rclcpp_action::Client<control_msgs::action::FollowJointTrajectory>::SharedPtr slider_client_;

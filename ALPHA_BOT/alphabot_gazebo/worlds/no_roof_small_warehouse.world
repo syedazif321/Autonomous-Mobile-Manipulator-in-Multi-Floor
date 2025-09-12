@@ -2013,10 +2013,10 @@
         </link>
       </model>
       <model name='rack'>
-        <pose>0.990738 -4.67345 2.83356 0 -0 0</pose>
+        <pose>-0.660551 -3.66836 2.83356 0 0 -1.57514</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose>0.990738 -4.67345 2.83356 0 -0 0</pose>
+          <pose>-0.660551 -3.66836 2.83356 0 0 -1.57514</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>

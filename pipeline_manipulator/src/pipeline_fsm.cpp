@@ -573,10 +573,11 @@ void PipelineFSM::runFSM()
         case State::SWITCH_FLOOR:
             RCLCPP_INFO(this->get_logger(), "🧱 Switching to Floor 1");
             publishBoolTopic("/use_floor_1", true);
-            timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_1000MS),
+            delay_timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_1000MS),
                 [this]() {
+                    RCLCPP_INFO(this->get_logger(), "⏰ Floor switch delay expired — navigating to drop_pre_amr");
                     this->transitionTo(State::NAV_TO_DROP_PRE_AMR);
-                    this->timer_->cancel();
+                    if (this->delay_timer_) this->delay_timer_->cancel();
                 });
             break;
 
