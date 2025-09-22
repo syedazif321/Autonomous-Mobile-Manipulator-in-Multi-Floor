@@ -10,7 +10,7 @@ amcl:
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
-    do_beamskip: false
+    do_beamskip: true
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
@@ -155,8 +155,8 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
+      update_frequency: 15.0
+      publish_frequency: 5.0
       global_frame: odom
       robot_base_frame: link_base
       use_sim_time: True
@@ -164,12 +164,24 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.22
-      plugins: ["voxel_layer", "inflation_layer"]
+      # robot_radius: 0.25
+      footprint: "[[0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32]]"
+      plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        observation_sources: scan
+        scan:
+          topic: /scan
+          data_type: "LaserScan"
+          clearing: True
+          marking: True
+          obstacle_range: 2.5
+          raytrace_range: 3.5
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.6
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -203,7 +215,8 @@ global_costmap:
       global_frame: map
       robot_base_frame: link_base
       use_sim_time: True
-      robot_radius: 0.22
+      # robot_radius: 0.22
+      footprint: "[[0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32]]"
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -312,10 +325,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [1.5, 0.0, 2.5]  # Maximum velocities, ordered [Vx, Vy, Vw]
-    min_velocity: [-1.5, 0.0, -2.5]
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
+    max_velocity: [0.6, 0.0, 1.2]  # Maximum velocities, ordered [Vx, Vy, Vw]
+    min_velocity: [-0.6, 0.0, -1.2]
+    max_accel: [1.5, 0.0, 2.0]
+    max_decel: [-1.5, 0.0, -2.0]
     odom_topic: "odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]

@@ -80,9 +80,10 @@ joint_names:
   - joint6
   - joint7
 points:
-  - positions: [-1.51844, 0.40143, -0.76795, 0.64577, 0.89012, 0.66323, -0.45379]
+  - positions: [-1.63441, 0.21853, 0.03951, 1.14246, 0.12855, 0.16098, -0.24668]
     time_from_start:
       sec: 3
       nanosec: 0
 "
 
+ros2 service call /switch_floor std_srvs/srv/SetBool "{data: true}"
