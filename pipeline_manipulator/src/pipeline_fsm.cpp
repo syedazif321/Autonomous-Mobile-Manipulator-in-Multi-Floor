@@ -45,8 +45,7 @@ PipelineFSM::PipelineFSM()
     elevator_client_ = this->create_client<std_srvs::srv::SetBool>("/elevator_cmd");
 
     // Initialize publisher
-    floor_pub_ = this->create_publisher<std_msgs::msg::Bool>("/use_floor_1", 10);
-
+  
     // Wait for servers
     while (!slider_client_->wait_for_action_server(1s) && rclcpp::ok()) {
         RCLCPP_INFO(this->get_logger(), "Waiting for slider trajectory server...");
@@ -384,13 +383,38 @@ void PipelineFSM::callSetBoolService(const std::string& service_name, bool data)
     RCLCPP_INFO(this->get_logger(), " Setting %s to %s", service_name.c_str(), data ? "true" : "false");
 }
 
-void PipelineFSM::publishBoolTopic(const std::string& topic_name, bool data)
+void PipelineFSM::callSwitchFloorService(bool use_floor_1)
 {
-    auto msg = std_msgs::msg::Bool();
-    msg.data = data;
-    floor_pub_->publish(msg);
-    RCLCPP_INFO(this->get_logger(), " Published %s to %s", data ? "true" : "false", topic_name.c_str());
+    if (!switch_floor_client_) {
+        switch_floor_client_ = this->create_client<std_srvs::srv::SetBool>("/switch_floor");
+    }
+
+    if (!switch_floor_client_->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(this->get_logger(), "/switch_floor service not available");
+        return;
+    }
+
+    auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+    req->data = use_floor_1;
+
+    auto future = switch_floor_client_->async_send_request(req);
+
+    // Just block on the future (no spin)
+    if (future.wait_for(std::chrono::seconds(5)) == std::future_status::ready)
+    {
+        auto resp = future.get();
+        if (resp->success) {
+            RCLCPP_INFO(this->get_logger(), "Floor switched: %s", resp->message.c_str());
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Floor switch failed: %s", resp->message.c_str());
+        }
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "Timeout waiting for /switch_floor service");
+    }
 }
+
 
 void PipelineFSM::sendArmTrajectory(const std::string& joint_target_name)
 {
@@ -618,7 +642,8 @@ void PipelineFSM::runFSM()
 
         case State::SWITCH_FLOOR:
             RCLCPP_INFO(this->get_logger(), "Switching to Floor 1");
-            publishBoolTopic("/use_floor_1", true);
+            callSwitchFloorService(true);
+
             delay_timer_ = this->create_wall_timer(std::chrono::milliseconds(DELAY_1000MS),
                 [this]() {
                     RCLCPP_INFO(this->get_logger(), " Floor switch delay expired — navigating to drop_pre_amr");
@@ -626,6 +651,7 @@ void PipelineFSM::runFSM()
                     if (this->delay_timer_) this->delay_timer_->cancel();
                 });
             break;
+
 
         case State::NAV_TO_DROP_PRE_AMR:
             RCLCPP_INFO(this->get_logger(), " Navigating to drop_pre_amr");

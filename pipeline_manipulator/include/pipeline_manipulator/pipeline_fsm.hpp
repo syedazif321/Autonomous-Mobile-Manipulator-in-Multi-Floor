@@ -289,7 +289,8 @@ private:
     void callStartPicking();
     void callAttachDetach(bool attach);
     void callSetBoolService(const std::string& service_name, bool data);
-    void publishBoolTopic(const std::string& topic_name, bool data);
+    void callSwitchFloorService(bool use_floor_1);
+
     void sendArmTrajectory(const std::string& joint_target_name);
 
     State current_state_;
@@ -308,7 +309,7 @@ private:
     rclcpp::Client<msg_gazebo::srv::AttachDetach>::SharedPtr attach_detach_client_;
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr elevator_client_;
 
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr floor_pub_;
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr switch_floor_client_;
 
     bool navigation_goal_sent_ = false;
     bool navigation_complete_ = false;

@@ -51,6 +51,7 @@ This command starts the manipulation pipeline, coordinating tasks such as percep
 
    Ensure you have ROS 2 installed. For ROS 2 Humble, follow the installation guide:
 
+<<<<<<< HEAD
    ```bash
    sudo apt update
    sudo apt install ros-humble-desktop
@@ -150,3 +151,26 @@ After sourcing your workspace, you can test individual components:
 ---
 
 Feel free to customize this README further based on your specific project details and requirements.
+=======
+ros2 topic pub /rm_group_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory "
+header:
+  stamp:
+    sec: 0
+    nanosec: 0
+joint_names:
+  - joint1
+  - joint2
+  - joint3
+  - joint4
+  - joint5
+  - joint6
+  - joint7
+points:
+  - positions: [-1.63441, 0.21853, 0.03951, 1.14246, 0.12855, 0.16098, -0.24668]
+    time_from_start:
+      sec: 3
+      nanosec: 0
+"
+
+ros2 service call /switch_floor std_srvs/srv/SetBool "{data: true}"
+>>>>>>> origin/long_distance
