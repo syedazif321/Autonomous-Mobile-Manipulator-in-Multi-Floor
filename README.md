@@ -1,19 +1,20 @@
-Absolutely! Let's create a comprehensive **README.md** for your ROS 2 project, covering the following components:
-
-* **Gazebo Navigation** for mobile base control
-* **MoveIt 2** for arm manipulation
-* **Pipeline FSM** for orchestrating tasks
+Absolutely! I’ve updated and polished your README with your **actual repository link** and included all your project components, launch instructions, and notes. Here’s a ready-to-use `README.md` you can drop directly into your repository:
 
 ---
 
+# Autonomous Mobile Manipulator in Multi-Floor Environment
+
 ## 📚 Project Overview
 
-This repository integrates:
+This repository simulates a **mobile manipulator robot system** operating across **two floors**, integrating:
 
-* **Gazebo**: for 3D simulation of the robot's environment.
-* **Navigation 2 (Nav2)**: for autonomous navigation and path planning.
-* **MoveIt 2**: for motion planning and control of the robotic arm.
-* **Pipeline FSM**: for managing the sequence of tasks in the manipulation pipeline.
+* **AMR Base** for autonomous navigation (Gazebo + Nav2)
+* **Linear Guide + RealMan 7DoF Robotic Arm** for pick-and-place
+* **Pipeline FSM** for task orchestration (perception → planning → execution)
+* **Dynamic Obstacles** (human agents) for realistic testing
+* **Lift/Elevator simulation** for multi-floor transport
+
+The robot autonomously picks packages from racks on the ground floor, navigates to a lift, travels to the second floor, and drops packages on a designated table using vision-guided manipulation.
 
 ---
 
@@ -25,7 +26,7 @@ This repository integrates:
 ros2 launch alphabot_navigation gazebo.launch.py
 ```
 
-This command starts the Gazebo simulation with the Navigation 2 stack, enabling autonomous navigation capabilities for the robot.
+This starts Gazebo with the Navigation 2 stack for autonomous navigation.
 
 ### 2. Launch MoveIt 2 for Arm Control
 
@@ -33,7 +34,7 @@ This command starts the Gazebo simulation with the Navigation 2 stack, enabling 
 ros2 launch mobile_manipulator_bringup moveit_bringup.launch.py
 ```
 
-This command initializes MoveIt 2, allowing for motion planning and control of the robotic arm.
+This initializes MoveIt 2 for motion planning and control of the robotic arm.
 
 ### 3. Run the Manipulation Pipeline
 
@@ -41,103 +42,99 @@ This command initializes MoveIt 2, allowing for motion planning and control of t
 ros2 launch pipeline_manipulator pipeline_fsm.launch.py
 ```
 
-This command starts the manipulation pipeline, coordinating tasks such as perception, planning, and execution.
+This launches the pipeline FSM to coordinate perception, planning, and task execution.
 
 ---
 
 ## 🛠️ Setup Instructions
 
-1. **Install Dependencies**
+1. **Install ROS 2 Humble**
 
-   Ensure you have ROS 2 installed. For ROS 2 Humble, follow the installation guide:
-
-   ```bash
-   sudo apt update
-   sudo apt install ros-humble-desktop
-   ```
+```bash
+sudo apt update
+sudo apt install ros-humble-desktop
+```
 
 2. **Clone the Repository**
 
-   Clone this repository into your ROS 2 workspace:
+```bash
+cd ~/ros2_ws/src
+git clone https://github.com/syedazif321/Autonomous-Mobile-Manipulator-in-Multi-Floor.git
+```
 
-   ```bash
-   cd ~/ros2_ws/src
-   git clone https://github.com/yourusername/your-repo.git
-   ```
+3. **Install Dependencies**
 
-3. **Install Required Packages**
-
-   Navigate to your workspace and install dependencies:
-
-   ```bash
-   cd ~/ros2_ws
-   rosdep install --from-paths src --ignore-src -r -y
-   ```
+```bash
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+```
 
 4. **Build the Workspace**
 
-   Build the workspace using `colcon`:
-
-   ```bash
-   colcon build
-   ```
+```bash
+colcon build
+```
 
 5. **Source the Workspace**
 
-   Source the workspace to overlay the new packages:
-
-   ```bash
-   source install/setup.bash
-   ```
+```bash
+source install/setup.bash
+```
 
 ---
 
-## 📄 File Structure
+## 📄 Repository Structure
 
 ```
-your-repo/
-├── alphabot_navigation/
-│   └── launch/
-│       └── gazebo.launch.py
-├── mobile_manipulator_bringup/
-│   └── launch/
-│       └── moveit_bringup.launch.py
-└── pipeline_manipulator/
-    └── launch/
-        └── pipeline_fsm.launch.py
+Autonomous-Mobile-Manipulator-in-Multi-Floor/
+├── alphabot_navigation/       # Mobile base navigation & Gazebo launch
+├── mobile_manipulator_bringup/ # MoveIt 2 arm bringup & control
+├── pipeline_manipulator/       # Pipeline FSM for task orchestration
+├── AMR_elevator_plugin/        # Gazebo elevator/lift plugin
+├── box_spawner/                # Package spawning in Gazebo
+├── object_spwan_plugin/        # Dynamic object spawning plugin
+├── REALMAN_7DOF/               # URDF and meshes for 7DoF arm
+├── parol6_gui/                 # Qt GUI for teleoperation & monitoring
+├── pipeline_analytics.db       # Database for robot events (goals, lifts, heights)
+├── attach_detach/              # Gripper attach/detach plugin
+├── build/                      # Build folder
+├── install/                    # Install folder
+├── log/                        # Logs
+├── LICENSE
+└── README.md
 ```
 
 ---
 
 ## 🧪 Testing the Setup
 
-After sourcing your workspace, you can test individual components:
+After sourcing your workspace:
 
 * **Gazebo with Navigation 2**:
 
-  ```bash
-  ros2 launch alphabot_navigation gazebo.launch.py
-  ```
+```bash
+ros2 launch alphabot_navigation gazebo.launch.py
+```
 
 * **MoveIt 2 for Arm Control**:
 
-  ```bash
-  ros2 launch mobile_manipulator_bringup moveit_bringup.launch.py
-  ```
+```bash
+ros2 launch mobile_manipulator_bringup moveit_bringup.launch.py
+```
 
-* **Manipulation Pipeline**:
+* **Manipulation Pipeline FSM**:
 
-  ```bash
-  ros2 launch pipeline_manipulator pipeline_fsm.launch.py
-  ```
+```bash
+ros2 launch pipeline_manipulator pipeline_fsm.launch.py
+```
 
 ---
 
 ## 🧠 Troubleshooting Tips
 
-* **Gazebo Launch Issues**: Ensure that all required plugins and models are correctly installed and sourced.
-* **MoveIt 2 Configuration**: Verify that your URDF and SRDF files are correctly configured and accessible.
-* **Pipeline FSM Errors**: Check the logs for any missing dependencies or misconfigurations in the launch files.
+* **Gazebo Launch Issues**: Ensure all required models/plugins are installed and sourced.
+* **MoveIt 2 Configuration**: Verify URDF/SRDF paths are correct.
+* **Pipeline FSM Errors**: Check logs for missing dependencies or misconfigured launch files.
 
 ---
 
@@ -149,4 +146,12 @@ After sourcing your workspace, you can test individual components:
 
 ---
 
-Feel free to customize this README further based on your specific project details and requirements.
+## 🎯 GitHub Repository
+
+[https://github.com/syedazif321/Autonomous-Mobile-Manipulator-in-Multi-Floor](https://github.com/syedazif321/Autonomous-Mobile-Manipulator-in-Multi-Floor)
+
+---
+
+If you want, I can also **generate a ready-to-use PDF version of this README** that you can attach along with your Task 2 report for your manager.
+
+Do you want me to do that next?
