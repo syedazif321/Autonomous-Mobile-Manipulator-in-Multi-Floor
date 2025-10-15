@@ -8,18 +8,18 @@
 
 ## 🏗️ Overview
 
-This project demonstrates a **complete ROS 2 Humble simulation** of an **autonomous mobile manipulator** that operates across **multiple floors** using an elevator.  
-It integrates **navigation, manipulation, perception, and floor coordination** into one pipeline.
+This repository contains a **complete ROS 2 Humble simulation** of an **autonomous mobile manipulator** capable of operating across **multiple floors** using an elevator system.  
+It combines **navigation, manipulation, perception, and coordination** into one unified pipeline.
 
 ### 🧠 Key Components
 - **AlphaBot Mobile Base (AMR)**
 - **7-DOF RealMan Manipulator**
-- **Linear Guide for Height Reach**
-- **Gazebo Elevator Plugin** for multi-floor movement
-- **Nav2** for autonomous navigation
+- **Linear Guide for Height Adjustment**
+- **Gazebo Elevator Plugin** for multi-floor transport
+- **Nav2** for navigation
 - **MoveIt 2** for motion planning
-- **Perception Pipeline** for package detection and pick-and-place
-- **Database Logging** for task data and events
+- **Perception Pipeline** for pick-and-place operations
+- **Database Logging** for task tracking
 
 ---
 
@@ -28,11 +28,11 @@ It integrates **navigation, manipulation, perception, and floor coordination** i
 ```bash
 Autonomous-Mobile-Manipulator-in-Multi-Floor/
 │
-├── alphabot_description/           # URDFs, meshes, and robot model
-├── rm_bringup/                     # RealMan manipulator setup
-├── custom_robots/                  # Multi-floor world and robot spawn
-├── mobile_manipulator_bringup/     # MoveIt bringup for manipulator
-├── alphabot_navigation/            # Nav2 + Gazebo navigation setup
+├── alphabot_description/           # Robot URDFs, meshes, and configs
+├── rm_bringup/                     # RealMan manipulator bringup
+├── custom_robots/                  # Multi-floor Gazebo world & robot spawn
+├── mobile_manipulator_bringup/     # MoveIt 2 bringup configuration
+├── alphabot_navigation/            # Nav2 navigation & Gazebo integration
 ├── pipeline_manipulator/           # FSM and perception pipeline
 ├── elevator_plugin/                # Gazebo elevator control plugin
 ├── gif/                            # Simulation demo GIFs
@@ -43,18 +43,19 @@ Autonomous-Mobile-Manipulator-in-Multi-Floor/
 
 ## ⚙️ Requirements
 
-* **Ubuntu 22.04 + ROS 2 Humble**
+* **Ubuntu 22.04**
+* **ROS 2 Humble**
 * **Gazebo 11**
 * **MoveIt 2**
 * **Nav2**
 * **teleop_twist_keyboard**
-* **SQLite / MySQL** (for database logging)
+* **SQLite / MySQL** (for logging)
 
 ---
 
 ## 🧩 Environment Setup
 
-Before launching, make sure your Gazebo environment can find the models and plugins:
+Before launching, make sure Gazebo can locate models and plugins:
 
 ```bash
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:$HOME/projetcs/Autonomous-Mobile-Manipulator-in-Multi-Floor/install/alphabot_description/share
@@ -65,55 +66,45 @@ export GAZEBO_PLUGIN_PATH=$HOME/projetcs/Autonomous-Mobile-Manipulator-in-Multi-
 
 ## 🚀 Full Simulation Launch (3-Terminal Setup)
 
-Run these three commands **in separate terminals** to start the full simulation system:
+Run these commands **in separate terminals** to start the full system.
 
-### 🦾 **Terminal 1 – MoveIt (Manipulator Control)**
-
-Launches the RealMan manipulator and MoveIt 2 motion planning environment.
+### 🦾 Terminal 1 — MoveIt (Manipulator Control)
 
 ```bash
 ros2 launch mobile_manipulator_bringup moveit_bringup.launch.py
 ```
 
-### 🧭 **Terminal 2 – Navigation + Gazebo**
-
-Starts Gazebo with the two-floor warehouse world, the AlphaBot AMR, Nav2 navigation stack, and elevator plugin.
+### 🧭 Terminal 2 — Navigation + Gazebo
 
 ```bash
 ros2 launch alphabot_navigation gazebo.launch.py
 ```
 
-### 🧩 **Terminal 3 – Pipeline / FSM (Main Logic)**
-
-Runs the main pipeline node that coordinates all tasks: perception, pick-and-place, navigation, and floor transitions.
+### 🧩 Terminal 3 — Pipeline / FSM (Main Logic)
 
 ```bash
 ros2 run pipeline_manipulator pipeline_fsm
 ```
 
-> 🧠 **Tip:** Launch these in order — MoveIt first, then Navigation, and finally the Pipeline.
+> 🧠 **Tip:** Launch in order — MoveIt → Navigation → Pipeline.
 
 ---
 
 ## 🎮 Optional Utilities
 
-### Manual Teleoperation
-
-You can manually move the robot base for debugging:
+**Manual Teleoperation**
 
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/amazon_robot/cmd_vel
 ```
 
-### Elevator Control
-
-Manually trigger the elevator using a service:
+**Elevator Control**
 
 ```bash
 ros2 service call /elevator_cmd std_srvs/srv/SetBool "{data: true}"
 ```
 
-### Linear Guide Control
+**Linear Guide Control**
 
 ```bash
 ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.5]" -1
@@ -123,13 +114,13 @@ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArr
 
 ## 🧠 System Workflow
 
-1. **Pipeline Node (`pipeline_fsm`)** initializes.
-2. Vision detects target package on rack.
-3. Manipulator picks package using MoveIt.
-4. AMR navigates to elevator (Nav2).
-5. Elevator plugin lifts the robot to the upper floor.
-6. AMR moves to drop zone table.
-7. Arm places package and logs task in database.
+1. The **pipeline node** initializes and starts perception.
+2. The **camera detects** the target package on the rack.
+3. **Manipulator picks** the object using MoveIt.
+4. **AMR navigates** to the elevator (Nav2).
+5. The **elevator plugin** lifts the robot to the next floor.
+6. **AMR drives** to the drop zone table.
+7. **Arm places** the package and logs data into the database.
 
 ---
 
@@ -137,8 +128,8 @@ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArr
 
 ✅ Multi-floor warehouse with elevator
 ✅ Integrated MoveIt 2 + Nav2 control
-✅ Perception-based pick-and-place
-✅ Linear guide for extended reach
+✅ Vision-based pick-and-place
+✅ Linear guide for height reach
 ✅ Task database logging
 ✅ Dynamic obstacle simulation
 
@@ -159,9 +150,9 @@ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArr
 ## 🔧 Future Enhancements
 
 * Add **3D vision-based grasping**
-* Implement **battery & docking simulation**
+* Add **battery & docking simulation**
 * Extend to **multi-robot elevator coordination**
-* Real-world testing with actual AlphaBot + RealMan hardware
+* Real-world testing on physical robot setup
 
 ---
 
@@ -177,9 +168,4 @@ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArr
 
 Released under the **MIT License**.
 
-```
-
-```bash
-ros2 launch mobile_manipulator_bringup moveit_bringup.launch.py
-```
 
