@@ -1,5 +1,4 @@
 
-````markdown
 # 🤖 Autonomous Mobile Manipulator in Multi-Floor
 
 <div align="center">
@@ -167,5 +166,4 @@ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArr
 ## 🧾 License
 
 Released under the **MIT License**.
-
 
