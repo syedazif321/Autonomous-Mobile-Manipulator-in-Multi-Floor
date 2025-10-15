@@ -179,4 +179,7 @@ Released under the **MIT License**.
 
 ```
 
+```bash
+ros2 launch mobile_manipulator_bringup moveit_bringup.launch.py
+```
 

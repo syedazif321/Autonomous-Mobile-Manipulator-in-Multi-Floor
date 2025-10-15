@@ -36,7 +36,11 @@ private:
   std::default_random_engine gen_;
 
   double x = 0.217246;
+<<<<<<< HEAD
+  double y = 17.614721; 
+=======
   double y = 17.613545; 
+>>>>>>> origin/long_distance
   double yaw = 0.0;
 
   std::uniform_real_distribution<double> size_dist_{0.15, 0.16};

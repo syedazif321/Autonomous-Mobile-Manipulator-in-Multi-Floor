@@ -45,7 +45,7 @@ public:
           // >>>>>>>>>>>>>>>>>>>> ADD RPY OFFSET PARAMETERS <<<<<<<<<<<<<<<<<<<<<
         roll_offset_deg_(declare_parameter("roll_offset_deg", 180.0)),
         pitch_offset_deg_(declare_parameter("pitch_offset_deg", 0.0)),
-        yaw_offset_deg_(declare_parameter("yaw_offset_deg", -90.0)),
+        yaw_offset_deg_(declare_parameter("yaw_offset_deg", 0.0)),
           // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         detection_active_(false),
         has_detected_(false),
