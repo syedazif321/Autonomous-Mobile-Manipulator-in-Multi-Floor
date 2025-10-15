@@ -142,7 +142,7 @@ ros2 topic pub /slider_position_controller/commands std_msgs/msg/Float64MultiArr
 | Warehouse World  | <img src="gif/world.gif" width="500"/>          |
 | Linear Guide     | <img src="gif/linear_guide.gif" width="500"/>   |
 | Database Logging | <img src="gif/data_base.gif" width="500"/>      |
-| Pipeline Demo    | <img src="gif/pipeline1.gif" width="500"/>      |
+| Pipeline Demo    | <img src="gif/pipleine1.gif" width="500"/>      |
 
 ---
 
